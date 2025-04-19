@@ -26,20 +26,17 @@ const App = () => {
         setLoading(true);
         
         // Получаем данные пользователя из Telegram WebApp
-        const initData = window.Telegram.WebApp.initData || '';
+        const initData = window.Telegram?.WebApp?.initData || '';
         
         if (!initData) {
-          console.error('Не удалось получить initData');
-          setLoading(false);
-          return;
-        }
-        
-        // Извлекаем информацию о пользователе
-        const userStr = new URLSearchParams(initData).get('user');
-        const userData = userStr ? JSON.parse(userStr) : null;
-        
-        if (!userData) {
-          console.error('Не удалось получить данные пользователя');
+          console.warn('Не удалось получить initData, используем режим разработки');
+          setUser({
+            _id: 'dev_user_id',
+            telegramId: 12345678,
+            username: 'test_user',
+            firstName: 'Test',
+            lastName: 'User'
+          });
           setLoading(false);
           return;
         }

@@ -19,8 +19,12 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
+//app.use(cors({
+//  origin: process.env.WEBHOOK_URL, // Указываем точный источник запросов
+//  credentials: true
+//}));
 app.use(cors({
-  origin: process.env.WEBHOOK_URL, // Указываем точный источник запросов
+  origin: '*', // Разрешаем все источники для отладки 
   credentials: true
 }));
 app.use(express.json());

@@ -5,12 +5,17 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-// Получаем доступ к WebApp Telegram
-window.Telegram.WebApp.ready();
-window.Telegram.WebApp.expand();
+// Получаем доступ к WebApp Telegram (с проверкой на наличие API)
+if (window.Telegram && window.Telegram.WebApp) {
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
+} else {
+  console.warn('Telegram WebApp API не найден. Работаем в режиме разработки.');
+}
 
-// Определяем тему на основе темы Telegram
-const isDarkMode = window.Telegram.WebApp.colorScheme === 'dark';
+// Также нужно заменить использование Telegram-темы:
+const isDarkMode = window.Telegram?.WebApp?.colorScheme === 'dark' || 
+  window.matchMedia?.('(prefers-color-scheme: dark)').matches || false;
 
 const theme = createTheme({
   palette: {

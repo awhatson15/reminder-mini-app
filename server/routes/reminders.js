@@ -59,15 +59,23 @@ router.post('/', async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Пользователь не найден' });
     }
-    
-    const reminder = new Reminder({
+
+    // Подготовка данных с явной обработкой года для дней рождения
+    const reminderData = {
       user: user._id,
       title,
       type,
-      date,
+      date: {
+        day: date.day,
+        month: date.month,
+        // Для дней рождения год может быть null
+        year: type === 'birthday' ? (date.year || null) : date.year
+      },
       description,
       notifyDaysBefore: notifyDaysBefore || 1
-    });
+    };
+    
+    const reminder = new Reminder(reminderData);
     
     await reminder.save();
     logger.info(`Создано новое напоминание для пользователя ${telegramId}: ${title}`);
@@ -115,9 +123,18 @@ router.put('/:id', async (req, res) => {
     const updateData = {};
     if (title) updateData.title = title;
     if (type) updateData.type = type;
-    if (date) updateData.date = date;
+    
+    if (date) {
+      updateData.date = {
+        day: date.day,
+        month: date.month,
+        // Для дней рождения год может быть null
+        year: type === 'birthday' ? (date.year || null) : date.year
+      };
+    }
+    
     if (description !== undefined) updateData.description = description;
-    if (notifyDaysBefore) updateData.notifyDaysBefore = notifyDaysBefore;
+    if (notifyDaysBefore !== undefined) updateData.notifyDaysBefore = notifyDaysBefore;
     
     const reminder = await Reminder.findByIdAndUpdate(
       req.params.id,

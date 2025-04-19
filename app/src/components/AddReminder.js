@@ -53,23 +53,31 @@ const AddReminder = () => {
       return;
     }
     
-    // Подготовка данных
-    const reminderData = {
-      telegramId: user.telegramId,
-      title,
-      type,
-      date: {
-        day: date.date(),
-        month: date.month() + 1,
-        year: type === 'birthday' ? null : date.year()
-      },
-      description,
-      notifyDaysBefore
-    };
-    
-    // Отправка запроса
     try {
       setLoading(true);
+      
+      // Подготовка данных о дате
+      const dateData = {
+        day: date.date(),
+        month: date.month() + 1
+      };
+      
+      // Год добавляем только для обычных событий
+      if (type !== 'birthday') {
+        dateData.year = date.year();
+      }
+      
+      // Подготовка полного объекта данных
+      const reminderData = {
+        telegramId: user.telegramId,
+        title: title.trim(),
+        type,
+        date: dateData,
+        description: description.trim(),
+        notifyDaysBefore
+      };
+      
+      // Отправка запроса
       await axios.post('/api/reminders', reminderData);
       
       setSnackbar({
@@ -84,9 +92,16 @@ const AddReminder = () => {
       }, 1500);
     } catch (error) {
       console.error('Ошибка при создании напоминания:', error);
+      let errorMessage = 'Ошибка при создании напоминания';
+      
+      // Если есть ответ от сервера, показываем его сообщение
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: 'Ошибка при создании напоминания',
+        message: errorMessage,
         severity: 'error'
       });
       setLoading(false);

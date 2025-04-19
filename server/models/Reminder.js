@@ -34,6 +34,10 @@ const reminderSchema = new mongoose.Schema({
       // Год не обязателен для дней рождения
       required: function() {
         return this.type !== 'birthday';
+      },
+      // Явное указание, что null разрешен
+      default: function() {
+        return this.type === 'birthday' ? null : undefined;
       }
     }
   },

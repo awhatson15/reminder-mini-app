@@ -93,22 +93,30 @@ const EditReminder = () => {
       return;
     }
     
-    // Подготовка данных
-    const reminderData = {
-      title,
-      type,
-      date: {
-        day: date.date(),
-        month: date.month() + 1,
-        year: type === 'birthday' ? null : date.year()
-      },
-      description,
-      notifyDaysBefore
-    };
-    
-    // Отправка запроса
     try {
       setSaving(true);
+
+      // Подготовка данных о дате
+      const dateData = {
+        day: date.date(),
+        month: date.month() + 1
+      };
+      
+      // Год добавляем только для обычных событий
+      if (type !== 'birthday') {
+        dateData.year = date.year();
+      }
+      
+      // Подготовка полного объекта данных
+      const reminderData = {
+        title: title.trim(),
+        type,
+        date: dateData,
+        description: description.trim(),
+        notifyDaysBefore
+      };
+      
+      // Отправка запроса
       await axios.put(`/api/reminders/${id}`, reminderData);
       
       setSnackbar({
@@ -123,9 +131,16 @@ const EditReminder = () => {
       }, 1500);
     } catch (error) {
       console.error('Ошибка при обновлении напоминания:', error);
+      let errorMessage = 'Ошибка при обновлении напоминания';
+      
+      // Если есть ответ от сервера, показываем его сообщение
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: 'Ошибка при обновлении напоминания',
+        message: errorMessage,
         severity: 'error'
       });
       setSaving(false);

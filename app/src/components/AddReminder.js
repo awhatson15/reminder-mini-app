@@ -61,7 +61,7 @@ const AddReminder = () => {
       date: {
         day: date.date(),
         month: date.month() + 1,
-        year: type === 'birthday' ? (date.year() || null) : date.year()
+        year: type === 'birthday' ? null : date.year()
       },
       description,
       notifyDaysBefore

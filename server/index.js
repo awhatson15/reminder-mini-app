@@ -14,9 +14,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Настройка безопасности и логирования
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Отключаем для исправления проблем с SPA
+  crossOriginEmbedderPolicy: false
+}));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
-app.use(cors());
+app.use(cors({
+  origin: process.env.WEBHOOK_URL, // Указываем точный источник запросов
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,10 +45,16 @@ mongoose.connect(process.env.MONGO_URI)
 // Настройка Telegram бота
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
+// Обработка ошибок бота
+bot.on('polling_error', (error) => {
+  logger.error(`Ошибка соединения с Telegram API: ${error.message}`);
+});
+
 // Обработка команды /start
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   try {
+    logger.info(`Получена команда /start от пользователя ${chatId}`);
     // Создаем кнопку для открытия Mini App
     await bot.sendMessage(chatId, 'Добро пожаловать! Нажмите кнопку ниже, чтобы открыть приложение напоминаний:', {
       reply_markup: {

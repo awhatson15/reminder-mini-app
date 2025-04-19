@@ -19,8 +19,7 @@ services:
       - NODE_ENV=production
       - LOG_LEVEL=info
     volumes:
-      - ./app:/app
-      - /app/node_modules
+      - logs:/app/logs
     networks:
       - app-network
       - nginx-network

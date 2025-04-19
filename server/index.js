@@ -19,14 +19,13 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
-//app.use(cors({
-//  origin: process.env.WEBHOOK_URL, // Указываем точный источник запросов
-//  credentials: true
-//}));
+
+// Настройка CORS для работы со всеми источниками (включая Telegram)
 app.use(cors({
-  origin: '*', // Разрешаем все источники для отладки 
+  origin: '*',  // Разрешаем все источники для тестирования
   credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -84,6 +83,6 @@ app.get('*', (req, res) => {
 });
 
 // Запуск сервера
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {  // Изменено на '0.0.0.0' для приема соединений извне
   logger.info(`Server is running on port ${PORT}`);
 }); 

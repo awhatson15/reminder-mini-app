@@ -29,7 +29,27 @@ const App = () => {
         const initData = window.Telegram?.WebApp?.initData || '';
         
         if (!initData) {
-          console.warn('Не удалось получить initData, используем режим разработки');
+          console.warn('Не удалось получить initData, используем тестовые данные');
+          
+          // Для разработки или прямого доступа - используем тестовые данные
+          setUser({
+            _id: 'dev_user_id',
+            telegramId: 12345678,
+            username: 'test_user',
+            firstName: 'Test',
+            lastName: 'User'
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Извлекаем информацию о пользователе
+        const userStr = new URLSearchParams(initData).get('user');
+        const userData = userStr ? JSON.parse(userStr) : null;
+        
+        if (!userData) {
+          console.error('Не удалось получить данные пользователя');
+          // Для прямого доступа через браузер - также используем тестовые данные  
           setUser({
             _id: 'dev_user_id',
             telegramId: 12345678,
@@ -56,15 +76,13 @@ const App = () => {
         setLoading(false);
         
         // Для разработки - временный пользователь
-        if (process.env.NODE_ENV === 'development') {
-          setUser({
-            _id: 'dev_user_id',
-            telegramId: 12345678,
-            username: 'test_user',
-            firstName: 'Test',
-            lastName: 'User'
-          });
-        }
+        setUser({
+          _id: 'dev_user_id',
+          telegramId: 12345678,
+          username: 'test_user',
+          firstName: 'Test',
+          lastName: 'User'
+        });
       }
     };
     
@@ -75,14 +93,7 @@ const App = () => {
     return <Loading />;
   }
   
-  if (!user) {
-    return (
-      <div style={{ padding: 20, textAlign: 'center' }}>
-        Ошибка авторизации. Пожалуйста, перезапустите приложение.
-      </div>
-    );
-  }
-  
+  // Пользователь всегда должен быть определен (либо реальный, либо тестовый)
   return (
     <UserContext.Provider value={{ user }}>
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">

@@ -5,17 +5,23 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-// Получаем доступ к WebApp Telegram (с проверкой на наличие API)
+// Безопасная инициализация Telegram WebApp
 if (window.Telegram && window.Telegram.WebApp) {
-  window.Telegram.WebApp.ready();
-  window.Telegram.WebApp.expand();
+  try {
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+    console.log('Telegram WebApp API инициализирован успешно');
+  } catch (error) {
+    console.warn('Ошибка при инициализации Telegram WebApp:', error);
+  }
 } else {
-  console.warn('Telegram WebApp API не найден. Работаем в режиме разработки.');
+  console.warn('Telegram WebApp API не обнаружен. Работаем в режиме отладки.');
 }
 
-// Также нужно заменить использование Telegram-темы:
+// Определяем тему на основе темы Telegram или системной
 const isDarkMode = window.Telegram?.WebApp?.colorScheme === 'dark' || 
-  window.matchMedia?.('(prefers-color-scheme: dark)').matches || false;
+                 window.matchMedia?.('(prefers-color-scheme: dark)').matches || 
+                 false;
 
 const theme = createTheme({
   palette: {
@@ -27,11 +33,11 @@ const theme = createTheme({
       main: '#F57C00', // Оранжевый цвет для контраста
     },
     background: {
-      default: window.Telegram.WebApp.backgroundColor || (isDarkMode ? '#0E1621' : '#F5F5F5'),
+      default: window.Telegram?.WebApp?.backgroundColor || (isDarkMode ? '#0E1621' : '#F5F5F5'),
       paper: isDarkMode ? '#17212B' : '#FFFFFF',
     },
     text: {
-      primary: window.Telegram.WebApp.textColor || (isDarkMode ? '#FFFFFF' : '#000000'),
+      primary: window.Telegram?.WebApp?.textColor || (isDarkMode ? '#FFFFFF' : '#000000'),
       secondary: isDarkMode ? '#8CACDA' : '#757575',
     },
   },

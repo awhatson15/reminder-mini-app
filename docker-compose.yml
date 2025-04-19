@@ -1,6 +1,11 @@
+version: '3'
+
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reminder-mini-app
     restart: always
     ports:
       - "3000:3000"
@@ -14,7 +19,8 @@ services:
       - NODE_ENV=production
       - LOG_LEVEL=info
     volumes:
-      - logs:/app/logs
+      - ./app:/app
+      - /app/node_modules
     networks:
       - app-network
       - nginx-network

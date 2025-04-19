@@ -56,29 +56,39 @@ const AddReminder = () => {
     try {
       setLoading(true);
       
-      // Подготовка данных о дате
+      // Получаем день и месяц из объекта dayjs
+      const dayValue = date.date();
+      const monthValue = date.month() + 1;
+      
+      // Подготовка данных о дате с гарантированными значениями
       const dateData = {
-        day: date.date(),
-        month: date.month() + 1
+        day: dayValue,
+        month: monthValue,
       };
       
-      // Год добавляем только для обычных событий
+      // Год добавляем только для обычных событий, но гарантируем, что он останется undefined при отсутствии
       if (type !== 'birthday') {
         dateData.year = date.year();
       }
       
-      // Подготовка полного объекта данных
-      const reminderData = {
+      console.log('Отправляемые данные:', {
         telegramId: user.telegramId,
         title: title.trim(),
         type,
         date: dateData,
         description: description.trim(),
         notifyDaysBefore
-      };
+      });
       
-      // Отправка запроса
-      await axios.post('/api/reminders', reminderData);
+      // Отправка запроса с подготовленными данными
+      await axios.post('/api/reminders', {
+        telegramId: user.telegramId,
+        title: title.trim(),
+        type,
+        date: dateData,
+        description: description.trim(),
+        notifyDaysBefore
+      });
       
       setSnackbar({
         open: true,

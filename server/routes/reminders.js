@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
 // Создать новое напоминание
 router.post('/', async (req, res) => {
   try {
-    const { 
+    let { 
       telegramId, 
       title, 
       type, 
@@ -41,17 +41,46 @@ router.post('/', async (req, res) => {
       notifyDaysBefore 
     } = req.body;
     
-    if (!telegramId || !title || !type || !date || !date.day || !date.month) {
-      return res.status(400).json({ 
-        message: 'Необходимо указать telegramId, заголовок, тип и дату (день и месяц)' 
-      });
+    // Логирование для отладки
+    logger.info(`POST /api/reminders - Входящие данные: ${JSON.stringify({
+      telegramId, 
+      title, 
+      type, 
+      date,
+      description,
+      notifyDaysBefore
+    })}`);
+    
+    // Базовая проверка обязательных полей
+    if (!telegramId) {
+      return res.status(400).json({ message: 'Необходим telegramId' });
     }
     
-    // Проверяем корректность года (если это не день рождения)
-    if (type !== 'birthday' && !date.year) {
-      return res.status(400).json({ 
-        message: 'Для событий (не дней рождения) необходимо указать год' 
-      });
+    if (!title) {
+      return res.status(400).json({ message: 'Необходимо указать заголовок' });
+    }
+    
+    if (!type || (type !== 'birthday' && type !== 'event')) {
+      return res.status(400).json({ message: 'Необходимо указать корректный тип' });
+    }
+    
+    // Проверка даты
+    if (!date) {
+      return res.status(400).json({ message: 'Необходимо указать дату' });
+    }
+    
+    // Проверка полей даты
+    if (typeof date.day !== 'number' || date.day < 1 || date.day > 31) {
+      return res.status(400).json({ message: 'Необходимо указать корректный день месяца (1-31)' });
+    }
+    
+    if (typeof date.month !== 'number' || date.month < 1 || date.month > 12) {
+      return res.status(400).json({ message: 'Необходимо указать корректный месяц (1-12)' });
+    }
+    
+    // Проверка года для событий (не дней рождения)
+    if (type === 'event' && !date.year) {
+      return res.status(400).json({ message: 'Для событий необходимо указать год' });
     }
     
     const user = await User.findOne({ telegramId });
@@ -105,7 +134,7 @@ router.get('/:id', async (req, res) => {
 // Обновить напоминание
 router.put('/:id', async (req, res) => {
   try {
-    const { 
+    let { 
       title, 
       type, 
       date, 
@@ -113,11 +142,30 @@ router.put('/:id', async (req, res) => {
       notifyDaysBefore 
     } = req.body;
     
-    // Проверяем корректность года (если это не день рождения)
-    if (type === 'event' && date && !date.year) {
-      return res.status(400).json({ 
-        message: 'Для событий (не дней рождения) необходимо указать год' 
-      });
+    // Логирование для отладки
+    logger.info(`PUT /api/reminders/${req.params.id} - Входящие данные: ${JSON.stringify({
+      title, 
+      type, 
+      date,
+      description,
+      notifyDaysBefore
+    })}`);
+    
+    // Проверка данных о дате, если они предоставлены
+    if (date) {
+      // Проверка полей даты
+      if (typeof date.day !== 'number' || date.day < 1 || date.day > 31) {
+        return res.status(400).json({ message: 'Необходимо указать корректный день месяца (1-31)' });
+      }
+      
+      if (typeof date.month !== 'number' || date.month < 1 || date.month > 12) {
+        return res.status(400).json({ message: 'Необходимо указать корректный месяц (1-12)' });
+      }
+      
+      // Проверка года для событий (не дней рождения)
+      if (type === 'event' && !date.year) {
+        return res.status(400).json({ message: 'Для событий необходимо указать год' });
+      }
     }
     
     const updateData = {};

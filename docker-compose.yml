@@ -17,6 +17,7 @@ services:
       - logs:/app/logs
     networks:
       - app-network
+      - nginx-network
 
   mongodb:
     image: mongo:6
@@ -31,6 +32,8 @@ services:
 networks:
   app-network:
     driver: bridge
+  nginx-network:
+    external: true  # Это позволит контейнерам подключаться к внешней сети
 
 volumes:
   mongodb-data:

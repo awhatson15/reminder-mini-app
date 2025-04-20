@@ -27,6 +27,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/app/build ./app/build
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/package*.json ./
+COPY firebase-service-account.json ./firebase-service-account.json
 
 # Создание директории для логов
 RUN mkdir -p /app/logs

@@ -1,23 +1,30 @@
-const admin = require('firebase-admin');
-const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
+const userRepository = require('../repositories/userRepository');
 
+// Опциональный импорт Firebase Admin SDK
+let admin = null;
 let firebaseInitialized = false;
 
-// Инициализация Firebase Admin SDK
+// Попытка импорта firebase-admin, если он не установлен, просто отключаем эту функциональность
 try {
-  const serviceAccount = require('../../firebase-service-account.json');
-  if (Object.keys(serviceAccount).length === 0) {
-    logger.warn('Firebase Admin SDK не инициализирован: пустой файл конфигурации');
-  } else {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    firebaseInitialized = true;
-    logger.info('Firebase Admin SDK успешно инициализирован');
+  admin = require('firebase-admin');
+  
+  try {
+    const serviceAccount = require('../../firebase-service-account.json');
+    if (Object.keys(serviceAccount).length === 0) {
+      logger.warn('Firebase Admin SDK не инициализирован: пустой файл конфигурации');
+    } else {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      firebaseInitialized = true;
+      logger.info('Firebase Admin SDK успешно инициализирован');
+    }
+  } catch (error) {
+    logger.warn('Firebase Admin SDK не инициализирован:', error.message);
   }
 } catch (error) {
-  logger.warn('Firebase Admin SDK не инициализирован:', error.message);
+  logger.warn('Модуль firebase-admin не установлен. Push-уведомления отключены.');
 }
 
 // Отправка push-уведомления

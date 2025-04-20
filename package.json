@@ -25,7 +25,8 @@
     "joi": "^17.11.0",
     "compression": "^1.7.4",
     "express-async-errors": "^3.1.1",
-    "crypto": "^1.0.1"
+    "crypto": "^1.0.1",
+    "firebase-admin": "^11.10.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",

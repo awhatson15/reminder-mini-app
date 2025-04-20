@@ -27,17 +27,21 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
   const [hasPermission, setHasPermission] = useState(false);
   const [checkingPermission, setCheckingPermission] = useState(true);
   
-  // Проверяем разрешение при монтировании
+  // Проверяем поддержку API при монтировании
   useEffect(() => {
     checkPermission();
   }, []);
   
   const checkPermission = async () => {
     try {
-      const permission = await navigator.permissions.query({ name: 'contacts' });
-      setHasPermission(permission.state === 'granted');
+      if (!('contacts' in navigator && 'select' in navigator.contacts)) {
+        setHasPermission(false);
+        return;
+      }
+      setHasPermission(true);
     } catch (error) {
-      console.error('Ошибка при проверке разрешения:', error);
+      console.error('Ошибка при проверке поддержки контактов:', error);
+      setHasPermission(false);
     } finally {
       setCheckingPermission(false);
     }
@@ -54,7 +58,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
         debouncedSearch(inputValue);
       }
     } catch (error) {
-      console.error('Ошибка при запросе разрешения:', error);
+      console.error('Ошибка при запросе доступа к контактам:', error);
     } finally {
       setLoading(false);
     }
@@ -148,6 +152,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
               </Box>
             </Box>
           )}
+          noOptionsText="Контакты не найдены"
         />
         
         {!checkingPermission && !hasPermission && (
@@ -170,9 +175,11 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
         )}
       </Box>
       
-      {!hasPermission && (
+      {!hasPermission && !checkingPermission && (
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Разрешите доступ к контактам телефона для быстрого поиска
+          {!('contacts' in navigator && 'select' in navigator.contacts) 
+            ? "Ваш браузер не поддерживает работу с контактами"
+            : "Разрешите доступ к контактам для быстрого поиска"}
         </Typography>
       )}
     </Box>

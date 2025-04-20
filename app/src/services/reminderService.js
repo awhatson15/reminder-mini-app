@@ -46,6 +46,24 @@ const KEYS = {
   LAST_SYNC: 'last_sync_timestamp',
 };
 
+/**
+ * Функция получения напоминаний для пользователя
+ * @param {number} telegramId - ID пользователя в Telegram
+ * @returns {Promise<Array>} - Массив напоминаний
+ */
+export const fetchReminders = async (telegramId) => {
+  try {
+    const response = await axios.get(`/api/reminders`, {
+      params: { telegramId }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при загрузке напоминаний:', error);
+    // При ошибке возвращаем пустой массив
+    return [];
+  }
+};
+
 class ReminderService {
   constructor() {
     this.isOnline = navigator.onLine;

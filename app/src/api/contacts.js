@@ -28,23 +28,29 @@ export const requestContactsPermission = async () => {
       throw new Error('Telegram Web App не доступен');
     }
 
-    console.log('Запрашиваем контакты через Telegram...');
+    console.log('Запрашиваем доступ к контактам телефона...');
     
     try {
-      // Запрашиваем контакты через Telegram
-      const result = await window.Telegram.WebApp.requestContact();
-      console.log('Получен контакт:', result);
+      // Запрашиваем доступ к контактам телефона
+      const result = await window.Telegram.WebApp.requestWriteAccess();
+      console.log('Доступ к контактам:', result);
 
       if (!result) {
-        console.log('Контакт не выбран');
+        console.log('Доступ не получен');
         return false;
       }
 
-      // Формируем контакт
+      // Запрашиваем данные пользователя
+      const user = window.Telegram.WebApp.initDataUnsafe?.user;
+      if (!user) {
+        throw new Error('Не удалось получить данные пользователя');
+      }
+
+      // Формируем контакт из данных пользователя
       const contact = {
-        name: [result.first_name + (result.last_name ? ' ' + result.last_name : '')],
-        tel: [result.phone_number],
-        id: result.phone_number
+        name: [user.first_name + (user.last_name ? ' ' + user.last_name : '')],
+        tel: [user.phone_number || ''],
+        id: user.id.toString()
       };
 
       // Сохраняем в кэш
@@ -56,8 +62,8 @@ export const requestContactsPermission = async () => {
       
       return true;
     } catch (error) {
-      console.error('Ошибка при запросе контакта:', error);
-      throw new Error('Не удалось получить контакт. Пожалуйста, разрешите доступ.');
+      console.error('Ошибка при запросе доступа к контактам:', error);
+      throw new Error('Не удалось получить доступ к контактам телефона');
     }
   } catch (error) {
     console.error('Ошибка при запросе доступа к контактам:', error);

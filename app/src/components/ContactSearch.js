@@ -14,7 +14,7 @@ import {
 import {
   Person as PersonIcon,
   Search as SearchIcon,
-  ContactPhone as ContactPhoneIcon,
+  Phone as PhoneIcon,
   Check as CheckIcon
 } from '@mui/icons-material';
 import { searchContacts, requestContactsPermission } from '../api/contacts';
@@ -53,7 +53,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
     };
   }, []);
   
-  // Запрос контакта через Telegram
+  // Запрос доступа к контактам
   const handleRequestPermission = async () => {
     try {
       setLoading(true);
@@ -61,14 +61,14 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
       const result = await requestContactsPermission();
       if (result) {
         setHasPermission(true);
-        // После успешного импорта, ищем по текущему запросу
+        // После получения доступа, ищем по текущему запросу
         if (inputValue) {
           debouncedSearch(inputValue);
         }
       }
     } catch (error) {
-      console.error('Ошибка при импорте контакта:', error);
-      setImportError(error.message || 'Ошибка при импорте контакта');
+      console.error('Ошибка при запросе доступа:', error);
+      setImportError(error.message || 'Ошибка при запросе доступа к контактам');
       setHasPermission(false);
     } finally {
       setLoading(false);
@@ -140,20 +140,20 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
         />
         
         {!hasPermission && (
-          <Tooltip title="Импортировать контакт из Telegram">
+          <Tooltip title="Разрешить доступ к номеру телефона">
             <Button
               variant="outlined"
               onClick={handleRequestPermission}
               disabled={loading}
-              startIcon={loading ? <CircularProgress size={20} /> : <ContactPhoneIcon />}
+              startIcon={loading ? <CircularProgress size={20} /> : <PhoneIcon />}
             >
-              Импорт
+              Разрешить
             </Button>
           </Tooltip>
         )}
         
         {hasPermission && (
-          <Tooltip title="Контакт импортирован">
+          <Tooltip title="Доступ получен">
             <CheckIcon color="success" />
           </Tooltip>
         )}
@@ -171,7 +171,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
       
       {!hasPermission && !loading && !importError && (
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Импортируйте контакт для быстрого поиска
+          Нажмите "Разрешить" для доступа к номеру телефона
         </Typography>
       )}
     </Box>

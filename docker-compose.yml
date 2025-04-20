@@ -14,7 +14,7 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/reminder-app
       - BOT_TOKEN=${BOT_TOKEN}
       - WEBHOOK_URL=${WEBHOOK_URL}
-      - NODE_ENV=production
+      - NODE_ENV=development
       - LOG_LEVEL=info
     volumes:
       - logs:/app/logs

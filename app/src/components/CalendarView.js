@@ -66,6 +66,53 @@ const calendarVariants = {
   exit: { opacity: 0, y: -10 }
 };
 
+// Добавляю функцию generateCalendarDates
+const generateCalendarDates = (date) => {
+  const year = date.year();
+  const month = date.month();
+  
+  // Начало месяца
+  const startOfMonth = dayjs(new Date(year, month, 1));
+  // День недели начала месяца (0 - воскресенье, поэтому корректируем для нашего календаря)
+  const startDayOfWeek = startOfMonth.day() === 0 ? 7 : startOfMonth.day();
+  
+  // Количество дней в месяце
+  const daysInMonth = startOfMonth.daysInMonth();
+  
+  // Генерируем массив с датами
+  const calendarDays = [];
+  let currentWeek = [];
+  
+  // Добавляем дни предыдущего месяца
+  for (let i = 1; i < startDayOfWeek; i++) {
+    const prevMonthDay = startOfMonth.subtract(startDayOfWeek - i, 'day');
+    currentWeek.push(prevMonthDay.toDate());
+  }
+  
+  // Добавляем дни текущего месяца
+  for (let i = 1; i <= daysInMonth; i++) {
+    const currentDay = dayjs(new Date(year, month, i));
+    currentWeek.push(currentDay.toDate());
+    
+    // Если достигли конца недели или конца месяца
+    if (currentWeek.length === 7 || i === daysInMonth) {
+      // Если не конец месяца и неделя не полная, добавляем дни следующего месяца
+      if (currentWeek.length < 7) {
+        const daysToAdd = 7 - currentWeek.length;
+        for (let j = 1; j <= daysToAdd; j++) {
+          const nextMonthDay = dayjs(new Date(year, month, i + j));
+          currentWeek.push(nextMonthDay.toDate());
+        }
+      }
+      
+      calendarDays.push([...currentWeek]);
+      currentWeek = [];
+    }
+  }
+  
+  return calendarDays;
+};
+
 const CalendarView = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -348,7 +395,7 @@ const CalendarView = () => {
             px: isMobile ? 1 : 2
           }}>
             <IconButton 
-              onClick={handlePrevMonth}
+              onClick={prevMonth}
               component={motion.button}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -359,7 +406,7 @@ const CalendarView = () => {
                 },
               }}
             >
-              <ChevronLeftIcon />
+              <PrevIcon />
             </IconButton>
             
             <Typography 
@@ -391,7 +438,7 @@ const CalendarView = () => {
             </Typography>
             
             <IconButton 
-              onClick={handleNextMonth}
+              onClick={nextMonth}
               component={motion.button}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -402,7 +449,7 @@ const CalendarView = () => {
                 },
               }}
             >
-              <ChevronRightIcon />
+              <NextIcon />
             </IconButton>
           </Box>
           

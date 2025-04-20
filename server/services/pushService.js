@@ -2,14 +2,27 @@ const admin = require('firebase-admin');
 const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
 
+let firebaseInitialized = false;
+
 // Инициализация Firebase Admin SDK
-const serviceAccount = require('../../firebase-service-account.json');
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+try {
+  const serviceAccount = require('../../firebase-service-account.json');
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+  firebaseInitialized = true;
+  logger.info('Firebase Admin SDK успешно инициализирован');
+} catch (error) {
+  logger.warn('Firebase Admin SDK не инициализирован:', error.message);
+}
 
 // Отправка push-уведомления
 const sendPushNotification = async (telegramId, title, body, data = {}) => {
+  if (!firebaseInitialized) {
+    logger.warn(`Push-уведомление не отправлено пользователю ${telegramId} (Firebase не инициализирован)`);
+    return;
+  }
+
   try {
     const user = await userRepository.findByTelegramId(telegramId);
     

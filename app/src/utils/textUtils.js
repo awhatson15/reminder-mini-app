@@ -70,19 +70,32 @@ export const formatReadingTime = (minutes) => {
 };
 
 /**
+ * Удаляет все HTML теги из строки
+ * 
+ * @param {string} html - строка с HTML
+ * @returns {string} текст без HTML тегов
+ */
+export const stripHtml = (html) => {
+  if (!html || typeof html !== 'string') return '';
+  return html.replace(/<\/?[^>]+(>|$)/g, '');
+};
+
+/**
  * Форматирует количество в человекочитаемый формат
  * 
  * @param {number} num - число для форматирования
  * @returns {string} отформатированное число
  */
 export const formatNumber = (num) => {
+  if (num === undefined || num === null) return '';
+  
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M';
   }
   if (num >= 1000) {
     return (num / 1000).toFixed(1) + 'K';
   }
-  return num.toString();
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
 /**
@@ -94,17 +107,6 @@ export const formatNumber = (num) => {
 export const extractFirstName = (fullName) => {
   if (!fullName) return '';
   return fullName.split(' ')[0];
-};
-
-/**
- * Удаляет все HTML теги из строки
- * 
- * @param {string} html - строка с HTML
- * @returns {string} текст без HTML тегов
- */
-export const stripHtml = (html) => {
-  if (!html || typeof html !== 'string') return '';
-  return html.replace(/<\/?[^>]+(>|$)/g, '');
 };
 
 /**
@@ -149,17 +151,6 @@ export const formatUserName = (user) => {
 };
 
 /**
- * Преобразует первую букву строки в заглавную
- * @param {string} str - исходная строка
- * @returns {string} - строка с заглавной первой буквой
- */
-export const capitalize = (str) => {
-  if (!str || typeof str !== 'string') return '';
-  
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-
-/**
  * Генерирует случайный ID
  * @param {number} length - длина ID
  * @returns {string} - случайный ID
@@ -173,33 +164,6 @@ export const generateId = (length = 10) => {
   }
   
   return result;
-};
-
-/**
- * Функция для склонения слов в зависимости от числа
- * @param {number} number - число для склонения
- * @param {string} one - форма слова для числа 1, 21, 31, ...
- * @param {string} few - форма слова для чисел 2-4, 22-24, ...
- * @param {string} many - форма слова для чисел 5-20, 25-30, ...
- * @returns {string} склоненное слово
- */
-export const plural = (number, one, few, many) => {
-  const mod10 = number % 10;
-  const mod100 = number % 100;
-
-  if (mod100 >= 11 && mod100 <= 19) {
-    return many;
-  }
-
-  if (mod10 === 1) {
-    return one;
-  }
-
-  if (mod10 >= 2 && mod10 <= 4) {
-    return few;
-  }
-
-  return many;
 };
 
 /**
@@ -225,37 +189,6 @@ export const truncate = (text, maxLength = 100, ellipsis = '...') => {
 export const removeExtraSpaces = (text) => {
   if (!text) return '';
   return text.replace(/\s+/g, ' ').trim();
-};
-
-/**
- * Приводит первую букву строки к верхнему регистру
- * @param {string} text - исходный текст
- * @returns {string} текст с заглавной первой буквой
- */
-export const capitalize = (text) => {
-  if (!text) return '';
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
-
-/**
- * Удаляет HTML-теги из строки
- * @param {string} html - исходный HTML-текст
- * @returns {string} чистый текст без тегов
- */
-export const stripHtml = (html) => {
-  if (!html) return '';
-  return html.replace(/<[^>]*>/g, '');
-};
-
-/**
- * Форматирует число с разделителями групп разрядов
- * @param {number} number - исходное число
- * @param {string} separator - разделитель групп разрядов
- * @returns {string} отформатированное число
- */
-export const formatNumber = (number, separator = ' ') => {
-  if (number === undefined || number === null) return '';
-  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator);
 };
 
 /**

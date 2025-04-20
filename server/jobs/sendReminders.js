@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const reminderRepository = require('../repositories/reminderRepository');
 const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
+const { plural } = require('../utils/textUtils');
 
 // Подключаем бота
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false });
@@ -209,23 +210,6 @@ const sendReminders = async () => {
   } catch (error) {
     logger.error('Ошибка при отправке напоминаний:', error);
   }
-};
-
-// Вспомогательная функция для правильного склонения слов
-const plural = (number, one, two, five) => {
-  let n = Math.abs(number);
-  n %= 100;
-  if (n >= 5 && n <= 20) {
-    return five;
-  }
-  n %= 10;
-  if (n === 1) {
-    return one;
-  }
-  if (n >= 2 && n <= 4) {
-    return two;
-  }
-  return five;
 };
 
 module.exports = { sendReminders }; 

@@ -17,7 +17,7 @@ const WEEKDAY_NAMES = [
 ];
 
 /**
- * Получает текущую дату в формате ISO
+ * Возвращает текущую дату в формате ISO
  * @returns {string} текущая дата в ISO формате
  */
 const getCurrentISODate = () => new Date().toISOString();
@@ -131,77 +131,23 @@ const getRelativeTime = (date) => {
   // Меньше часа
   if (diff < 60 * 60 * 1000) {
     const minutes = Math.floor(diff / (60 * 1000));
-    return `${minutes} ${pluralizeMinutes(minutes)} назад`;
+    return `${minutes} ${plural(minutes, 'минуту', 'минуты', 'минут')} назад`;
   }
   
   // Меньше суток
   if (diff < 24 * 60 * 60 * 1000) {
     const hours = Math.floor(diff / (60 * 60 * 1000));
-    return `${hours} ${pluralizeHours(hours)} назад`;
+    return `${hours} ${plural(hours, 'час', 'часа', 'часов')} назад`;
   }
   
   // Меньше недели
   if (diff < 7 * 24 * 60 * 60 * 1000) {
     const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-    return `${days} ${pluralizeDays(days)} назад`;
+    return `${days} ${plural(days, 'день', 'дня', 'дней')} назад`;
   }
   
   // Иначе возвращаем дату
   return formatDate(d);
-};
-
-/**
- * Склоняет слово "минута" в зависимости от числа
- * 
- * @param {number} count - количество минут
- * @returns {string} склоненное слово
- */
-const pluralizeMinutes = (count) => {
-  if (count % 10 === 1 && count % 100 !== 11) {
-    return 'минуту';
-  }
-  
-  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
-    return 'минуты';
-  }
-  
-  return 'минут';
-};
-
-/**
- * Склоняет слово "час" в зависимости от числа
- * 
- * @param {number} count - количество часов
- * @returns {string} склоненное слово
- */
-const pluralizeHours = (count) => {
-  if (count % 10 === 1 && count % 100 !== 11) {
-    return 'час';
-  }
-  
-  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
-    return 'часа';
-  }
-  
-  return 'часов';
-};
-
-/**
- * Склоняет слово "день" в зависимости от числа
- * 
- * @param {number} count - количество дней
- * @returns {string} склоненное слово
- */
-const pluralizeDays = (count) => {
-  if (count % 10 === 1 && count % 100 !== 11) {
-    return 'день';
-  }
-  
-  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
-    return 'дня';
-  }
-  
-  return 'дней';
 };
 
 /**
@@ -753,42 +699,14 @@ const formatRelativeTime = (date) => {
   if (minutes < 1) {
     return 'только что';
   } else if (minutes < 60) {
-    return `${minutes} ${pluralize(minutes, 'минуту', 'минуты', 'минут')} назад`;
+    return `${minutes} ${plural(minutes, 'минуту', 'минуты', 'минут')} назад`;
   } else if (hours < 24) {
-    return `${hours} ${pluralize(hours, 'час', 'часа', 'часов')} назад`;
+    return `${hours} ${plural(hours, 'час', 'часа', 'часов')} назад`;
   } else if (days < 7) {
-    return `${days} ${pluralize(days, 'день', 'дня', 'дней')} назад`;
+    return `${days} ${plural(days, 'день', 'дня', 'дней')} назад`;
   } else {
     return formatDate(date);
   }
-};
-
-/**
- * Вспомогательная функция для склонения слов
- * 
- * @param {number} number - число для склонения
- * @param {string} one - форма для 1, 21, 31, ...
- * @param {string} few - форма для 2-4, 22-24, ...
- * @param {string} many - форма для 5-20, 25-30, ...
- * @returns {string} склонённое слово
- */
-const pluralize = (number, one, few, many) => {
-  const mod10 = number % 10;
-  const mod100 = number % 100;
-  
-  if (mod100 >= 11 && mod100 <= 19) {
-    return many;
-  }
-  
-  if (mod10 === 1) {
-    return one;
-  }
-  
-  if (mod10 >= 2 && mod10 <= 4) {
-    return few;
-  }
-  
-  return many;
 };
 
 /**

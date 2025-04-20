@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, 
@@ -52,6 +52,9 @@ import Toast from './Toast';
 import { FixedSizeList as VirtualList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import ReminderItem from './ReminderItem';
+import { useInitData } from '../hooks/useInitData';
+import { plural } from '../utils/textUtils';
+import { formatDateForDisplay, getDayOfWeek, isToday, isTomorrow } from '../utils/dateUtils';
 
 // Константа с названиями месяцев для форматирования даты
 const MONTH_NAMES = [
@@ -303,54 +306,78 @@ const ReminderList = () => {
     return prepareItemsForVirtualList(groups);
   }, [filteredAndSortedReminders]);
   
-  // Рендерер для виртуализированного списка
-  const ItemRenderer = ({ index, style }) => {
-    const item = groupedItems[index];
-    
-    if (item.type === 'header') {
-      return (
-        <Box style={style}>
-          <Typography 
-            variant="h6" 
-            component="h2" 
-            sx={{ 
-              mt: 2, 
-              mb: 1, 
-              fontWeight: 'bold',
-              color: item.title === 'Сегодня' ? 'error.main' : 'primary.main'
-            }}
-          >
-            {item.title}
-          </Typography>
-        </Box>
-      );
-    } else if (item.type === 'reminder') {
-      return (
-        <Box style={style}>
-          <ReminderItem 
-            reminder={item.reminder} 
-            onEdit={(id) => navigate(`/edit/${id}`)} 
-            onDelete={(id) => {
-              setReminderToDelete(reminders.find(r => r._id === id));
-              setDeleteDialogOpen(true);
-            }}
-          />
-        </Box>
-      );
-    } else if (item.type === 'divider') {
-      return (
-        <Box style={style}>
-          <Divider sx={{ my: 2 }} />
-        </Box>
-      );
-    }
-    
-    return null;
-  };
+  // Определение пустого состояния (мемоизированный расчет)
+  const isEmpty = useMemo(() => {
+    return filteredAndSortedReminders.length === 0;
+  }, [filteredAndSortedReminders]);
+
+  // Подсчет напоминаний в каждой группе для бейджа (мемоизированный расчет)
+  const groupCounts = useMemo(() => {
+    return {
+      'семья': reminders.filter(r => r.group === 'семья').length,
+      'работа': reminders.filter(r => r.group === 'работа').length,
+      'друзья': reminders.filter(r => r.group === 'друзья').length,
+      'другое': reminders.filter(r => r.group === 'другое').length
+    };
+  }, [reminders]);
+  
+  // VirtualList требует функцию-рендерер для элементов
+  const ItemRenderer = useMemo(() => {
+    return ({ index, style }) => {
+      const item = groupedItems[index];
+      if (!item) return null;
+      
+      if (item.type === 'header') {
+        return (
+          <div style={style}>
+            <Typography 
+              variant="subtitle1" 
+              sx={{ 
+                fontWeight: 600, 
+                mb: 1, 
+                mt: 2,
+                color: alpha(theme.palette.text.primary, 0.8)
+              }}
+            >
+              {item.title}
+            </Typography>
+          </div>
+        );
+      }
+      
+      if (item.type === 'divider') {
+        return (
+          <div style={style}>
+            <Divider sx={{ my: 1 }} />
+          </div>
+        );
+      }
+      
+      if (item.type === 'reminder') {
+        const reminder = item.reminder;
+        return (
+          <div style={style}>
+            <ReminderItem 
+              reminder={reminder}
+              onEdit={(id) => navigate(`/edit/${id}`)}
+              onDelete={(id) => {
+                setReminderToDelete(reminders.find(r => r._id === id));
+                setDeleteDialogOpen(true);
+              }}
+            />
+          </div>
+        );
+      }
+      
+      return null;
+    };
+  }, [groupedItems, navigate, handleDelete, theme]);
   
   // Получаем высоту элемента в зависимости от его типа
-  const getItemHeight = (index) => {
+  const getItemHeight = useCallback((index) => {
     const item = groupedItems[index];
+    if (!item) return 0;
+    
     if (item.type === 'header') return 48;
     if (item.type === 'divider') return 32;
     
@@ -363,26 +390,11 @@ const ReminderList = () => {
       : 0;
     
     return baseHeight + descriptionHeight;
-  };
+  }, [groupedItems]);
 
   if (loading) {
     return <Loading />;
   }
-
-  // Подсчет напоминаний в каждой группе для бейджа (мемоизированный расчет)
-  const groupCounts = useMemo(() => {
-    return {
-      'семья': reminders.filter(r => r.group === 'семья').length,
-      'работа': reminders.filter(r => r.group === 'работа').length,
-      'друзья': reminders.filter(r => r.group === 'друзья').length,
-      'другое': reminders.filter(r => r.group === 'другое').length
-    };
-  }, [reminders]);
-
-  // Определение пустого состояния (мемоизированный расчет)
-  const isEmpty = useMemo(() => {
-    return filteredAndSortedReminders.length === 0;
-  }, [filteredAndSortedReminders]);
 
   return (
     <Box>
@@ -500,7 +512,7 @@ const ReminderList = () => {
               height={height}
               width={width}
               itemCount={groupedItems.length}
-              itemSize={(index) => getItemHeight(index)}
+              itemSize={getItemHeight}
             >
               {ItemRenderer}
             </VirtualList>
@@ -529,23 +541,6 @@ const ReminderList = () => {
       />
     </Box>
   );
-};
-
-// Вспомогательная функция для правильного склонения слов
-const plural = (number, one, two, five) => {
-  let n = Math.abs(number);
-  n %= 100;
-  if (n >= 5 && n <= 20) {
-    return five;
-  }
-  n %= 10;
-  if (n === 1) {
-    return one;
-  }
-  if (n >= 2 && n <= 4) {
-    return two;
-  }
-  return five;
 };
 
 export default ReminderList; 

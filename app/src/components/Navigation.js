@@ -12,7 +12,8 @@ import {
 } from '@mui/material';
 import { 
   Add as AddIcon,
-  Home as HomeIcon
+  Dashboard as DashboardIcon,
+  EventNote as EventIcon
 } from '@mui/icons-material';
 
 const Navigation = () => {
@@ -36,12 +37,13 @@ const Navigation = () => {
   return (
     <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
       <Paper
-        elevation={3}
+        elevation={4}
         sx={{
           position: 'relative',
-          borderRadius: '16px 16px 0 0',
+          borderRadius: '20px 20px 0 0',
           overflow: 'visible',
-          bgcolor: alpha(theme.palette.background.paper, 0.98)
+          bgcolor: alpha(theme.palette.background.paper, 0.98),
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`
         }}
       >
         <BottomNavigation
@@ -52,12 +54,17 @@ const Navigation = () => {
             }
           }}
           showLabels
-          sx={{ height: 60 }}
+          sx={{ height: 64 }}
         >
           <BottomNavigationAction
-            label="Главная"
+            label="Календарь"
             value="home"
-            icon={<HomeIcon />}
+            icon={<EventIcon sx={{ fontSize: 24 }} />}
+            sx={{
+              '&.Mui-selected': {
+                color: theme.palette.primary.main
+              }
+            }}
           />
           <BottomNavigationAction
             value="none"
@@ -71,20 +78,27 @@ const Navigation = () => {
         </BottomNavigation>
         
         {/* Плавающая кнопка добавления */}
-        <Zoom in={showAddButton}>
+        <Zoom in={showAddButton} timeout={300}>
           <Fab
             color="primary"
             aria-label="add"
             onClick={() => navigate('/add')}
             sx={{
               position: 'absolute',
-              top: -24,
+              top: -28,
               left: '50%',
               transform: 'translateX(-50%)',
-              boxShadow: theme.shadows[3]
+              boxShadow: theme.shadows[4],
+              width: 64,
+              height: 64,
+              '&:hover': {
+                backgroundColor: theme.palette.primary.dark,
+                transform: 'translateX(-50%) scale(1.05)',
+                transition: 'all 0.2s'
+              }
             }}
           >
-            <AddIcon />
+            <AddIcon sx={{ fontSize: 32 }} />
           </Fab>
         </Zoom>
       </Paper>

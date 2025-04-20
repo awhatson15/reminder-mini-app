@@ -215,44 +215,84 @@ const CalendarView = () => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        mb: 2,
-        mt: 1 
+        mb: 3,
+        mt: 1.5 
       }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
+        <Typography 
+          variant="h5" 
+          fontWeight="bold" 
+          sx={{ 
+            mb: 2.5, 
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: -8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 40,
+              height: 3,
+              backgroundColor: theme.palette.primary.main,
+              borderRadius: 4
+            }
+          }}
+        >
           Мои напоминания
         </Typography>
         
         <Paper 
-          elevation={1}
+          elevation={2}
           sx={{ 
             width: '100%', 
-            borderRadius: '16px',
-            overflow: 'hidden'
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`
           }}
         >
           <Tabs 
             value={viewMode} 
             onChange={(_, newValue) => setViewMode(newValue)}
             variant="fullWidth"
-            sx={{ minHeight: '42px' }}
+            sx={{ 
+              minHeight: '46px',
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '3px 3px 0 0'
+              }
+            }}
           >
             <Tab 
               value="calendar" 
               icon={<CalendarIcon fontSize="small" />} 
               label="Календарь"
-              sx={{ minHeight: '42px' }} 
+              sx={{ 
+                minHeight: '46px',
+                fontWeight: viewMode === 'calendar' ? 'medium' : 'normal',
+                textTransform: 'none',
+                fontSize: 15
+              }} 
             />
             <Tab 
               value="list" 
               icon={<ListIcon fontSize="small" />}
               label="Список" 
-              sx={{ minHeight: '42px' }} 
+              sx={{ 
+                minHeight: '46px',
+                fontWeight: viewMode === 'list' ? 'medium' : 'normal',
+                textTransform: 'none',
+                fontSize: 15
+              }} 
             />
             <Tab 
               value="timeline" 
               icon={<TimelineIcon fontSize="small" />}
               label="Лента" 
-              sx={{ minHeight: '42px' }} 
+              sx={{ 
+                minHeight: '46px',
+                fontWeight: viewMode === 'timeline' ? 'medium' : 'normal',
+                textTransform: 'none',
+                fontSize: 15
+              }} 
             />
           </Tabs>
         </Paper>
@@ -444,15 +484,22 @@ const CalendarView = () => {
                         alignItems: 'center', 
                         justifyContent: 'center',
                         flexDirection: 'column',
-                        py: 2 
+                        py: 3 
                       }}>
-                        <Typography variant="body2" color="text.secondary" mb={1}>
+                        <Typography variant="body2" color="text.secondary" mb={2}>
                           На эту дату нет событий
                         </Typography>
                         <Button 
-                          variant="outlined" 
+                          variant="contained" 
                           startIcon={<AddIcon />}
-                          size="small"
+                          size="medium"
+                          sx={{
+                            borderRadius: '12px',
+                            py: 1,
+                            px: 3,
+                            textTransform: 'none',
+                            fontWeight: 'medium'
+                          }}
                           onClick={() => handleLongPress(selectedDate)}
                         >
                           Добавить событие
@@ -474,33 +521,38 @@ const CalendarView = () => {
                             sx={{ 
                               display: 'flex',
                               alignItems: 'center',
-                              mb: 1,
-                              p: 1,
-                              borderRadius: '4px',
+                              mb: 1.5,
+                              p: 1.5,
+                              borderRadius: '10px',
                               transition: 'all 0.2s',
                               '&:hover': {
-                                bgcolor: alpha(theme.palette.action.hover, 0.1)
+                                bgcolor: alpha(theme.palette.action.hover, 0.15),
+                                transform: 'translateY(-2px)'
                               }
                             }}
                             onClick={() => navigate(`/edit/${event._id}`)}
                           >
                             <Avatar 
                               sx={{ 
-                                width: 32, 
-                                height: 32, 
+                                width: 42, 
+                                height: 42, 
                                 bgcolor: alpha(eventColor, 0.15),
                                 color: eventColor,
-                                mr: 1.5
+                                mr: 2
                               }}
                             >
                               {eventIcon}
                             </Avatar>
                             <Box sx={{ flexGrow: 1 }}>
-                              <Typography variant="body2" fontWeight="medium">
+                              <Typography variant="body1" fontWeight="medium">
                                 {event.title}
                               </Typography>
                               {event.description && (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography 
+                                  variant="body2" 
+                                  color="text.secondary"
+                                  sx={{ mt: 0.5 }}
+                                >
                                   {event.description.length > 50 
                                     ? `${event.description.substring(0, 50)}...` 
                                     : event.description}
@@ -508,7 +560,14 @@ const CalendarView = () => {
                               )}
                             </Box>
                             <IconButton 
-                              size="small"
+                              size="medium"
+                              color="primary"
+                              sx={{
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                '&:hover': {
+                                  bgcolor: alpha(theme.palette.primary.main, 0.15)
+                                }
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/edit/${event._id}`);

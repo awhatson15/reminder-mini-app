@@ -204,9 +204,15 @@ const ListView = ({ reminders }) => {
                           <ListItem 
                             alignItems="flex-start"
                             sx={{ 
-                              py: 1.5, 
-                              '&:hover': { bgcolor: alpha(theme.palette.action.hover, 0.1) },
-                              cursor: 'pointer'
+                              py: 2, 
+                              px: 2,
+                              '&:hover': { 
+                                bgcolor: alpha(theme.palette.action.hover, 0.12),
+                                transform: 'translateY(-2px)',
+                                transition: 'all 0.2s'
+                              },
+                              cursor: 'pointer',
+                              transition: 'all 0.15s'
                             }}
                             onClick={() => navigate(`/edit/${reminder._id}`)}
                           >
@@ -214,7 +220,9 @@ const ListView = ({ reminders }) => {
                               <Avatar 
                                 sx={{ 
                                   bgcolor: alpha(eventColor, 0.15), 
-                                  color: eventColor
+                                  color: eventColor,
+                                  width: 46,
+                                  height: 46
                                 }}
                               >
                                 {eventIcon}
@@ -271,7 +279,16 @@ const ListView = ({ reminders }) => {
                             />
                             
                             <IconButton 
-                              edge="end" 
+                              edge="end"
+                              size="medium"
+                              color="primary"
+                              sx={{
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                mr: 0.5,
+                                '&:hover': {
+                                  bgcolor: alpha(theme.palette.primary.main, 0.15)
+                                }
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/edit/${reminder._id}`);

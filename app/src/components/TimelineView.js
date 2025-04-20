@@ -192,14 +192,14 @@ const TimelineView = ({ reminders }) => {
                     
                     <Paper
                       sx={{ 
-                        p: 2,
+                        p: 2.5,
                         borderRadius: 2,
                         borderLeft: `4px solid ${eventColor}`,
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         '&:hover': {
-                          boxShadow: `0 4px 12px ${alpha(eventColor, 0.2)}`,
-                          transform: 'translateY(-2px)'
+                          boxShadow: `0 6px 16px ${alpha(eventColor, 0.18)}`,
+                          transform: 'translateY(-3px)'
                         }
                       }}
                       onClick={() => navigate(`/edit/${reminder._id}`)}
@@ -210,9 +210,9 @@ const TimelineView = ({ reminders }) => {
                             sx={{
                               bgcolor: alpha(eventColor, 0.15),
                               color: eventColor,
-                              width: 40,
-                              height: 40,
-                              mr: 1.5
+                              width: 48,
+                              height: 48,
+                              mr: 2
                             }}
                           >
                             {eventIcon}
@@ -229,7 +229,14 @@ const TimelineView = ({ reminders }) => {
                         </Box>
                         
                         <IconButton 
-                          size="small"
+                          size="medium"
+                          color="primary"
+                          sx={{
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.primary.main, 0.15)
+                            }
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/edit/${reminder._id}`);
@@ -243,7 +250,7 @@ const TimelineView = ({ reminders }) => {
                         <Typography 
                           variant="body2" 
                           color="text.secondary"
-                          sx={{ mt: 1.5, mb: 1 }}
+                          sx={{ mt: 2, mb: 1, pl: 8 }}
                         >
                           {reminder.description}
                         </Typography>
@@ -254,7 +261,8 @@ const TimelineView = ({ reminders }) => {
                           display: 'flex', 
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          mt: reminder.description ? 2 : 2.5
+                          mt: reminder.description ? 2 : 3,
+                          pl: 8
                         }}
                       >
                         <Chip
@@ -263,6 +271,10 @@ const TimelineView = ({ reminders }) => {
                           color={getTimeChipColor()}
                           variant={daysUntil <= 3 ? "filled" : "outlined"}
                           icon={daysUntil <= 3 ? <ArrowIcon /> : undefined}
+                          sx={{
+                            height: 28,
+                            fontWeight: daysUntil <= 3 ? 'medium' : 'normal'
+                          }}
                         />
                         
                         <Typography variant="caption" color="text.secondary">

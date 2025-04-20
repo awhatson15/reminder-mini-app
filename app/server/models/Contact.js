@@ -8,22 +8,20 @@ const contactSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: true
+    required: true,
+    index: true
   },
   phones: [{
     type: String,
+    required: true,
     index: true
   }],
   emails: [{
     type: String
   }],
-  address: {
-    type: String
-  },
-  birthday: Date,
   source: {
     type: String,
-    enum: ['phone', 'telegram', 'manual'],
+    enum: ['phone', 'manual'],
     default: 'manual'
   },
   createdAt: {
@@ -36,8 +34,9 @@ const contactSchema = new mongoose.Schema({
   }
 });
 
-// Индекс для поиска по имени
-contactSchema.index({ name: 'text' });
+// Составной индекс для поиска
+contactSchema.index({ userId: 1, name: 1 });
+contactSchema.index({ userId: 1, phones: 1 });
 
 // Обновляем updatedAt при изменении документа
 contactSchema.pre('save', function(next) {

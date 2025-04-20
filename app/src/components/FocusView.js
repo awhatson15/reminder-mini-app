@@ -134,57 +134,86 @@ const FocusView = ({ reminders }) => {
     >
       <Box sx={{ width: '100%' }}>
         {/* Фильтры по времени */}
-        <Paper 
+        <Box 
           sx={{ 
-            p: 1, 
             mb: 3,
-            borderRadius: 2,
             display: 'flex',
-            justifyContent: 'center',
-            width: '100%'
+            flexDirection: 'column',
+            alignItems: 'center'
           }}
         >
-          <ToggleButtonGroup
-            value={timeFilter}
-            exclusive
-            onChange={(_, value) => value && setTimeFilter(value)}
-            size="small"
+          <Paper 
+            elevation={0}
             sx={{ 
-              width: '100%',
+              p: 0.5, 
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+              borderRadius: 3,
               display: 'flex',
-              justifyContent: 'space-between',
-              '& .MuiToggleButton-root': {
-                flex: 1,
-                px: 2,
-                py: 0.75,
-                mx: 0.5,
-                borderRadius: '8px !important',
-                textTransform: 'none',
-                fontWeight: 'medium',
-                fontSize: '0.875rem',
-                '&:first-of-type': {
-                  ml: 0
-                },
-                '&:last-of-type': {
-                  mr: 0
-                }
-              }
+              width: 'auto'
             }}
           >
-            <ToggleButton value="today">
-              <TodayIcon sx={{ mr: 0.5, fontSize: '1.25rem' }} />
-              Сегодня
-            </ToggleButton>
-            <ToggleButton value="tomorrow">
-              <NextWeekIcon sx={{ mr: 0.5, fontSize: '1.25rem' }} />
-              Завтра
-            </ToggleButton>
-            <ToggleButton value="week">
-              <TimerIcon sx={{ mr: 0.5, fontSize: '1.25rem' }} />
-              Неделя
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Paper>
+            <ToggleButtonGroup
+              value={timeFilter}
+              exclusive
+              onChange={(_, value) => value && setTimeFilter(value)}
+              size="small"
+              sx={{ 
+                '& .MuiToggleButton-root': {
+                  border: 'none',
+                  borderRadius: '12px !important',
+                  mx: 0.3,
+                  px: 2,
+                  py: 1,
+                  minWidth: '110px',
+                  color: 'text.secondary',
+                  '&.Mui-selected': {
+                    bgcolor: 'background.paper',
+                    color: 'primary.main',
+                    boxShadow: theme.shadows[1],
+                    fontWeight: 500,
+                    '&:hover': {
+                      bgcolor: 'background.paper',
+                    }
+                  },
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  }
+                }
+              }}
+            >
+              <ToggleButton value="today">
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <TodayIcon sx={{ fontSize: '1.1rem', mr: 1 }} />
+                  <span>Сегодня</span>
+                </Box>
+              </ToggleButton>
+              <ToggleButton value="tomorrow">
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <NextWeekIcon sx={{ fontSize: '1.1rem', mr: 1 }} />
+                  <span>Завтра</span>
+                </Box>
+              </ToggleButton>
+              <ToggleButton value="week">
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <TimerIcon sx={{ fontSize: '1.1rem', mr: 1 }} />
+                  <span>Неделя</span>
+                </Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Paper>
+          
+          <Typography 
+            variant="body2" 
+            color="text.secondary" 
+            sx={{ mt: 2, fontWeight: 500 }}
+          >
+            {timeFilter === 'today' 
+              ? 'Задачи на сегодня'
+              : timeFilter === 'tomorrow'
+                ? 'Задачи на завтра'
+                : 'Задачи на ближайшую неделю'}
+          </Typography>
+        </Box>
 
         {/* Список напоминаний */}
         <AnimatePresence mode="wait">

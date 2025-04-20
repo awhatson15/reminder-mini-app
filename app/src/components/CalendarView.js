@@ -29,7 +29,7 @@ import {
   Edit as EditIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { UserContext } from '../App';
+import { UserContext, AppSettingsContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -70,13 +70,14 @@ const CalendarView = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
+  const { settings } = useContext(AppSettingsContext);
   const isMobile = window.innerWidth <= 600;
   
   // Состояние
   const [currentDate, setCurrentDate] = useState(dayjs()); // текущая отображаемая дата
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('calendar'); // calendar, focus, timeline
+  const [viewMode, setViewMode] = useState(settings.defaultScreen || 'calendar'); // Используем настройку из контекста
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);

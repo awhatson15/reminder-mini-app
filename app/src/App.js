@@ -26,6 +26,7 @@ import Settings from './components/Settings';
 // Контекст для пользовательских данных
 export const UserContext = createContext(null);
 export const ThemeContext = createContext(null);
+export const AppSettingsContext = createContext(null);
 
 // Анимации для переходов страниц
 const pageVariants = {
@@ -78,6 +79,9 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
   const [error, setError] = useState(null);
   const [networkStatus, setNetworkStatus] = useState(isOnline);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [appSettings, setAppSettings] = useState({
+    defaultScreen: localStorage.getItem('defaultScreen') || 'calendar'
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width:600px)');
@@ -88,6 +92,19 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
   // Переключение темы
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
+  };
+  
+  // Обновление настроек приложения
+  const updateAppSettings = (newSettings) => {
+    setAppSettings(prev => ({
+      ...prev,
+      ...newSettings
+    }));
+    
+    // Сохраняем в localStorage
+    if (newSettings.defaultScreen) {
+      localStorage.setItem('defaultScreen', newSettings.defaultScreen);
+    }
   };
   
   useEffect(() => {
@@ -241,67 +258,69 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
     <ThemeProvider theme={theme}>
       <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
         <UserContext.Provider value={{ user }}>
-          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-            <Box sx={containerStyles}>
-              <Container 
-                maxWidth="sm" 
-                disableGutters
-                sx={{ 
-                  position: 'relative',
-                  pb: 1, // Уменьшаем нижний отступ контейнера с 2 до 1
-                }}
-              >
-                <Box sx={{ 
-                  padding: isMobile ? '12px' : '16px', // Адаптивные отступы в зависимости от размера экрана
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  <StatusBar />
-                  
-                  {error && (
-                    <Alert 
-                      severity="error" 
-                      sx={{ mb: 2 }}
-                      action={
-                        <Button color="inherit" size="small" onClick={handleRetry}>
-                          Повторить
-                        </Button>
-                      }
-                    >
-                      {error}
-                    </Alert>
-                  )}
-                  
-                  <AnimatePresence mode="wait">
-                    <Routes location={location} key={location.pathname}>
-                      <Route path="/" element={
-                        <AnimatedPage>
-                          <CalendarView />
-                        </AnimatedPage>
-                      } />
-                      <Route path="/add" element={
-                        <AnimatedPage>
-                          <AddReminder />
-                        </AnimatedPage>
-                      } />
-                      <Route path="/edit/:id" element={
-                        <AnimatedPage>
-                          <EditReminder />
-                        </AnimatedPage>
-                      } />
-                      <Route path="/settings" element={
-                        <AnimatedPage>
-                          <Settings />
-                        </AnimatedPage>
-                      } />
-                    </Routes>
-                  </AnimatePresence>
-                </Box>
-              </Container>
-              
-              <Navigation />
-            </Box>
-          </LocalizationProvider>
+          <AppSettingsContext.Provider value={{ settings: appSettings, updateSettings: updateAppSettings }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
+              <Box sx={containerStyles}>
+                <Container 
+                  maxWidth="sm" 
+                  disableGutters
+                  sx={{ 
+                    position: 'relative',
+                    pb: 1, // Уменьшаем нижний отступ контейнера с 2 до 1
+                  }}
+                >
+                  <Box sx={{ 
+                    padding: isMobile ? '12px' : '16px', // Адаптивные отступы в зависимости от размера экрана
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <StatusBar />
+                    
+                    {error && (
+                      <Alert 
+                        severity="error" 
+                        sx={{ mb: 2 }}
+                        action={
+                          <Button color="inherit" size="small" onClick={handleRetry}>
+                            Повторить
+                          </Button>
+                        }
+                      >
+                        {error}
+                      </Alert>
+                    )}
+                    
+                    <AnimatePresence mode="wait">
+                      <Routes location={location} key={location.pathname}>
+                        <Route path="/" element={
+                          <AnimatedPage>
+                            <CalendarView />
+                          </AnimatedPage>
+                        } />
+                        <Route path="/add" element={
+                          <AnimatedPage>
+                            <AddReminder />
+                          </AnimatedPage>
+                        } />
+                        <Route path="/edit/:id" element={
+                          <AnimatedPage>
+                            <EditReminder />
+                          </AnimatedPage>
+                        } />
+                        <Route path="/settings" element={
+                          <AnimatedPage>
+                            <Settings />
+                          </AnimatedPage>
+                        } />
+                      </Routes>
+                    </AnimatePresence>
+                  </Box>
+                </Container>
+                
+                <Navigation />
+              </Box>
+            </LocalizationProvider>
+          </AppSettingsContext.Provider>
         </UserContext.Provider>
       </ThemeContext.Provider>
     </ThemeProvider>

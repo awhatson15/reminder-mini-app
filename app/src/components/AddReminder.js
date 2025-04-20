@@ -708,7 +708,18 @@ const AddReminder = () => {
               ))}
             </Stepper>
             
-            <form ref={formRef} onSubmit={handleSubmit}>
+            <form 
+              ref={formRef} 
+              onSubmit={(e) => {
+                // Предотвращаем случайный сабмит формы
+                if (activeStep !== steps.length - 1) {
+                  e.preventDefault();
+                  return;
+                }
+                handleSubmit(e);
+              }}
+              noValidate
+            >
               <Box sx={{ minHeight: '320px' }}>
                 {renderStepContent(activeStep)}
               </Box>

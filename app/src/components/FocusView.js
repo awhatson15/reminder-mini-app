@@ -136,11 +136,12 @@ const FocusView = ({ reminders }) => {
         {/* Фильтры по времени */}
         <Paper 
           sx={{ 
-            p: 1.5, 
+            p: 1, 
             mb: 3,
             borderRadius: 2,
             display: 'flex',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            width: '100%'
           }}
         >
           <ToggleButtonGroup
@@ -149,26 +150,37 @@ const FocusView = ({ reminders }) => {
             onChange={(_, value) => value && setTimeFilter(value)}
             size="small"
             sx={{ 
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'space-between',
               '& .MuiToggleButton-root': {
-                px: 3,
-                py: 1,
-                borderRadius: '8px !important',
+                flex: 1,
+                px: 2,
+                py: 0.75,
                 mx: 0.5,
+                borderRadius: '8px !important',
                 textTransform: 'none',
-                fontWeight: 'medium'
+                fontWeight: 'medium',
+                fontSize: '0.875rem',
+                '&:first-of-type': {
+                  ml: 0
+                },
+                '&:last-of-type': {
+                  mr: 0
+                }
               }
             }}
           >
             <ToggleButton value="today">
-              <TodayIcon sx={{ mr: 1 }} />
+              <TodayIcon sx={{ mr: 0.5, fontSize: '1.25rem' }} />
               Сегодня
             </ToggleButton>
             <ToggleButton value="tomorrow">
-              <NextWeekIcon sx={{ mr: 1 }} />
+              <NextWeekIcon sx={{ mr: 0.5, fontSize: '1.25rem' }} />
               Завтра
             </ToggleButton>
             <ToggleButton value="week">
-              <TimerIcon sx={{ mr: 1 }} />
+              <TimerIcon sx={{ mr: 0.5, fontSize: '1.25rem' }} />
               Неделя
             </ToggleButton>
           </ToggleButtonGroup>

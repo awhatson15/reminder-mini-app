@@ -9,13 +9,15 @@ import {
   InputAdornment,
   Button,
   Tooltip,
-  Alert
+  Alert,
+  Link
 } from '@mui/material';
 import {
   Person as PersonIcon,
   Search as SearchIcon,
   ContactPhone as ContactPhoneIcon,
-  Check as CheckIcon
+  Check as CheckIcon,
+  Error as ErrorIcon
 } from '@mui/icons-material';
 import { searchContacts, requestContactsPermission } from '../api/contacts';
 import debounce from 'lodash/debounce';
@@ -27,6 +29,25 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
   const [inputValue, setInputValue] = useState('');
   const [hasPermission, setHasPermission] = useState(false);
   const [importError, setImportError] = useState('');
+  const [isSupported, setIsSupported] = useState(true);
+  
+  // Проверяем поддержку API при монтировании
+  useEffect(() => {
+    const checkSupport = () => {
+      const supported = 'contacts' in navigator && 
+                       'select' in navigator.contacts && 
+                       window.location.protocol === 'https:';
+      setIsSupported(supported);
+      if (!supported) {
+        setImportError(
+          window.location.protocol !== 'https:' 
+            ? 'Для работы с контактами требуется защищенное соединение (HTTPS)'
+            : 'Ваш браузер не поддерживает работу с контактами'
+        );
+      }
+    };
+    checkSupport();
+  }, []);
   
   // Отложенный поиск
   const debouncedSearch = debounce(async (query) => {
@@ -139,7 +160,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
           noOptionsText="Контакты не найдены"
         />
         
-        {!hasPermission && (
+        {!hasPermission && isSupported && (
           <Tooltip title="Импортировать контакты телефона">
             <Button
               variant="outlined"
@@ -160,12 +181,28 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
       </Box>
       
       {importError && (
-        <Alert severity="error" sx={{ mt: 1 }} onClose={() => setImportError('')}>
+        <Alert 
+          severity="error" 
+          sx={{ mt: 1 }} 
+          onClose={() => setImportError('')}
+          icon={<ErrorIcon />}
+        >
           {importError}
+          {window.location.protocol !== 'https:' && (
+            <Box mt={1}>
+              <Typography variant="caption">
+                Для работы с контактами откройте приложение по HTTPS:
+                <br />
+                <Link href={`https://${window.location.host}`} target="_blank">
+                  https://{window.location.host}
+                </Link>
+              </Typography>
+            </Box>
+          )}
         </Alert>
       )}
       
-      {!hasPermission && !loading && !importError && (
+      {!hasPermission && !loading && !importError && isSupported && (
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
           Импортируйте контакты для быстрого поиска
         </Typography>

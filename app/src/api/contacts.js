@@ -2,30 +2,71 @@ import axios from 'axios';
 
 let cachedContacts = null;
 
+// Проверка поддержки API
+const checkContactsSupport = () => {
+  // Проверяем наличие API
+  if (!('contacts' in navigator)) {
+    throw new Error('Ваш браузер не поддерживает работу с контактами');
+  }
+  
+  // Проверяем HTTPS
+  if (window.location.protocol !== 'https:') {
+    throw new Error('Для работы с контактами требуется защищенное соединение (HTTPS)');
+  }
+  
+  // Проверяем поддержку метода select
+  if (!('select' in navigator.contacts)) {
+    throw new Error('Ваш браузер не поддерживает выбор контактов');
+  }
+};
+
 // Запрос разрешения и импорт контактов
 export const requestContactsPermission = async () => {
   try {
     // Проверяем поддержку API
-    if (!('contacts' in navigator && 'select' in navigator.contacts)) {
-      throw new Error('Ваш браузер не поддерживает работу с контактами');
-    }
+    checkContactsSupport();
 
     const props = ['name', 'tel', 'email'];
     const opts = { multiple: true };
 
-    // Запрашиваем контакты у пользователя
-    const contacts = await navigator.contacts.select(props, opts);
-    console.log('Получены контакты:', contacts);
-
-    if (contacts.length > 0) {
-      // Сохраняем в кэш
-      cachedContacts = contacts;
-      // Сохраняем контакты на сервере
-      await axios.post('/api/contacts/sync', { contacts });
-      return true;
-    }
+    console.log('Запрашиваем контакты...');
     
-    return false;
+    try {
+      // Запрашиваем контакты у пользователя
+      const contacts = await navigator.contacts.select(props, opts);
+      console.log('Получены контакты:', contacts);
+
+      if (!contacts || contacts.length === 0) {
+        console.log('Контакты не выбраны');
+        return false;
+      }
+
+      // Проверяем, что у контактов есть нужные поля
+      const validContacts = contacts.filter(contact => 
+        contact.name?.length > 0 && contact.tel?.length > 0
+      );
+
+      if (validContacts.length === 0) {
+        throw new Error('Не найдено контактов с именем и телефоном');
+      }
+
+      // Сохраняем в кэш
+      cachedContacts = validContacts;
+      
+      // Сохраняем контакты на сервере
+      await axios.post('/api/contacts/sync', { contacts: validContacts });
+      console.log('Контакты успешно сохранены');
+      
+      return true;
+    } catch (error) {
+      if (error.name === 'SecurityError') {
+        throw new Error('Доступ к контактам запрещен. Пожалуйста, разрешите доступ в настройках браузера.');
+      }
+      if (error.name === 'InvalidStateError') {
+        throw new Error('Не удалось открыть выбор контактов. Возможно, окно уже открыто.');
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('Ошибка при запросе доступа к контактам:', error);
     throw error;

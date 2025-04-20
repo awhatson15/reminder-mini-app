@@ -7,11 +7,13 @@ import {
   alpha, 
   Avatar, 
   Chip, 
-  IconButton 
+  IconButton,
+  Divider 
 } from '@mui/material';
 import {
   Edit as EditIcon,
-  ArrowForward as ArrowIcon
+  ArrowForward as ArrowIcon,
+  AccessTime as TimeIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -27,23 +29,23 @@ const timelineVariants = {
   exit: { opacity: 0, y: -10 }
 };
 
-// Анимация элементов ленты
+// Анимация элементов ленты - сделаем более сдержанной
 const itemVariants = {
-  initial: { opacity: 0, x: -20 },
+  initial: { opacity: 0, x: -10 },
   animate: (i) => ({ 
     opacity: 1, 
     x: 0, 
     transition: { 
-      delay: i * 0.1, 
-      duration: 0.4 
+      delay: i * 0.05, // Уменьшаем задержку для более быстрого появления
+      duration: 0.3 
     } 
   }),
   hover: { 
-    scale: 1.02,
+    scale: 1.01, // Уменьшаем эффект наведения
     transition: { duration: 0.2 }
   },
   tap: { 
-    scale: 0.98,
+    scale: 0.99,
     transition: { duration: 0.1 }
   }
 };
@@ -60,6 +62,7 @@ const CATEGORY_COLORS = {
 const TimelineView = ({ reminders }) => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const isMobile = window.innerWidth <= 600;
   
   // Сортировка напоминаний по времени (ближайшие вначале)
   const sortedReminders = useMemo(() => {
@@ -91,14 +94,13 @@ const TimelineView = ({ reminders }) => {
     if (daysUntil === 0) return 'Сегодня';
     if (daysUntil === 1) return 'Завтра';
     
-    return `Через ${daysUntil} ${plural(daysUntil, 'день', 'дня', 'дней')}`;
+    return `${daysUntil} ${plural(daysUntil, 'день', 'дня', 'дней')}`;
   };
   
   const formatDate = (date) => {
     const { day, month, year } = date;
     const dateObj = dayjs(new Date(year || new Date().getFullYear(), month - 1, day));
-    const dayName = getDayOfWeek(dateObj.toDate(), 'full');
-    return `${dayName}, ${day} ${dateObj.format('MMMM')} ${year || new Date().getFullYear()}`;
+    return `${day} ${dateObj.format('MMM')}`;
   };
   
   return (
@@ -112,7 +114,7 @@ const TimelineView = ({ reminders }) => {
         {sortedReminders.length === 0 ? (
           <Paper 
             sx={{ 
-              p: 3, 
+              p: 2, // Уменьшаем отступы
               textAlign: 'center',
               borderRadius: 2,
               bgcolor: alpha(theme.palette.primary.main, 0.05),
@@ -130,11 +132,11 @@ const TimelineView = ({ reminders }) => {
           <Box 
             sx={{ 
               position: 'relative', 
-              pl: 4,
+              pl: 3, // Уменьшаем отступ слева
               '&::before': {
                 content: '""',
                 position: 'absolute',
-                left: 16,
+                left: 12, // Смещаем линию ближе
                 top: 0,
                 bottom: 0,
                 width: 2,
@@ -171,13 +173,13 @@ const TimelineView = ({ reminders }) => {
                   <Box 
                     sx={{ 
                       position: 'relative', 
-                      mb: 3,
+                      mb: 1.5, // Уменьшаем отступ между элементами
                       '&::before': {
                         content: '""',
                         position: 'absolute',
-                        left: -12,
+                        left: -9, // Смещаем соединитель
                         top: 16,
-                        width: 10,
+                        width: 8, // Уменьшаем ширину соединителя
                         height: 2,
                         backgroundColor: alpha(theme.palette.primary.main, 0.2),
                         zIndex: 1
@@ -188,10 +190,10 @@ const TimelineView = ({ reminders }) => {
                     <Box 
                       sx={{ 
                         position: 'absolute',
-                        left: -16,
+                        left: -13, // Смещаем точку
                         top: 12,
-                        width: 10,
-                        height: 10,
+                        width: 8, // Уменьшаем размер точки
+                        height: 8, // Уменьшаем размер точки
                         borderRadius: '50%',
                         backgroundColor: eventColor,
                         border: `2px solid ${theme.palette.background.paper}`
@@ -200,14 +202,14 @@ const TimelineView = ({ reminders }) => {
                     
                     <Paper
                       sx={{ 
-                        p: 2.5,
+                        p: isMobile ? 1.5 : 2, // Уменьшаем внутренние отступы
                         borderRadius: 2,
-                        borderLeft: `4px solid ${eventColor}`,
+                        borderLeft: `3px solid ${eventColor}`, // Уменьшаем ширину бордера
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         '&:hover': {
-                          boxShadow: `0 6px 16px ${alpha(eventColor, 0.18)}`,
-                          transform: 'translateY(-3px)'
+                          boxShadow: `0 4px 12px ${alpha(eventColor, 0.15)}`, // Уменьшаем тень
+                          transform: 'translateY(-2px)' // Уменьшаем смещение при наведении
                         }
                       }}
                       onClick={() => navigate(`/edit/${reminder._id}`)}
@@ -218,28 +220,45 @@ const TimelineView = ({ reminders }) => {
                             sx={{
                               bgcolor: alpha(eventColor, 0.15),
                               color: eventColor,
-                              width: 48,
-                              height: 48,
-                              mr: 2
+                              width: 36, // Уменьшаем аватар
+                              height: 36, // Уменьшаем аватар
+                              mr: 1.5 // Уменьшаем отступ
                             }}
                           >
                             {eventIcon}
                           </Avatar>
                           
                           <Box>
-                            <Typography variant="subtitle1" fontWeight="medium">
+                            <Typography variant="subtitle2" fontWeight="medium">
                               {reminder.title}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {formattedDate}
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.3 }}>
+                              <Chip
+                                label={timeLeft}
+                                size="small"
+                                color={getTimeChipColor()}
+                                variant={daysUntil <= 3 ? "filled" : "outlined"}
+                                sx={{
+                                  height: 20, // Меньший размер чипа
+                                  fontSize: '0.7rem', // Меньший шрифт
+                                  '& .MuiChip-label': {
+                                    px: 1, // Меньший внутренний отступ
+                                  }
+                                }}
+                              />
+                              <Typography variant="caption" color="text.secondary" ml={1}>
+                                {formattedDate}
+                              </Typography>
+                            </Box>
                           </Box>
                         </Box>
                         
                         <IconButton 
-                          size="medium"
+                          size="small" // Меньшая кнопка
                           color="primary"
                           sx={{
+                            p: 0.5, // Меньший отступ
+                            ml: 1,
                             bgcolor: alpha(theme.palette.primary.main, 0.08),
                             '&:hover': {
                               bgcolor: alpha(theme.palette.primary.main, 0.15)
@@ -256,41 +275,19 @@ const TimelineView = ({ reminders }) => {
                       
                       {reminder.description && (
                         <Typography 
-                          variant="body2" 
+                          variant="caption" // Меньший размер шрифта
                           color="text.secondary"
-                          sx={{ mt: 2, mb: 1, pl: 8 }}
+                          sx={{ 
+                            display: 'block', 
+                            mt: 1, 
+                            ml: 7 // Выравнивание с текстом название  
+                          }}
                         >
-                          {reminder.description}
+                          {reminder.description.length > 100 ? 
+                            `${reminder.description.substring(0, 100)}...` : 
+                            reminder.description}
                         </Typography>
                       )}
-                      
-                      <Box 
-                        sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          mt: reminder.description ? 2 : 3,
-                          pl: 8
-                        }}
-                      >
-                        <Chip
-                          label={timeLeft}
-                          size="small"
-                          color={getTimeChipColor()}
-                          variant={daysUntil <= 3 ? "filled" : "outlined"}
-                          icon={daysUntil <= 3 ? <ArrowIcon /> : undefined}
-                          sx={{
-                            height: 28,
-                            fontWeight: daysUntil <= 3 ? 'medium' : 'normal'
-                          }}
-                        />
-                        
-                        <Typography variant="caption" color="text.secondary">
-                          {reminder.type === 'birthday' 
-                            ? 'День рождения' 
-                            : `Категория: ${reminder.group}`}
-                        </Typography>
-                      </Box>
                     </Paper>
                   </Box>
                 </motion.div>

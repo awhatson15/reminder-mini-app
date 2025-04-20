@@ -13,6 +13,22 @@ const { startScheduler } = require('./scheduler');
 const errorHandler = require('./middlewares/errorHandler');
 const { verifyTelegramWebAppData } = require('./middlewares/telegramAuth');
 
+// Добавляем обработчики непойманных исключений и отказов
+process.on('uncaughtException', (error) => {
+  logger.error('Необработанное исключение:', error);
+  
+  // В production режиме останавливаем сервер при критических ошибках
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('Критическая ошибка. Завершение работы приложения.');
+    process.exit(1);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Необработанный Promise rejection:', reason);
+  logger.error('Стек вызовов:', reason?.stack);
+});
+
 // Инициализация Express приложения
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,47 +76,71 @@ app.use(express.static(path.join(__dirname, '../app/build'), {
 }));
 
 // Подключение к MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  autoIndex: NODE_ENV !== 'production' // Отключаем автоиндексацию в production
-})
-  .then(() => {
-    logger.info(`Connected to MongoDB (${process.env.MONGO_URI.split('@').pop()})`);
-    
-    // Запускаем планировщик после подключения к базе данных
-    startScheduler();
+try {
+  logger.info(`Попытка подключения к MongoDB: ${process.env.MONGO_URI}`);
+  
+  mongoose.connect(process.env.MONGO_URI, {
+    autoIndex: NODE_ENV !== 'production' // Отключаем автоиндексацию в production
   })
-  .catch(err => {
-    logger.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+    .then(() => {
+      logger.info(`Connected to MongoDB (${process.env.MONGO_URI.split('@').pop()})`);
+      
+      try {
+        // Запускаем планировщик после подключения к базе данных
+        startScheduler();
+      } catch (schedulerError) {
+        logger.error('Ошибка при запуске планировщика:', schedulerError);
+      }
+    })
+    .catch(err => {
+      logger.error('MongoDB connection error:', err);
+      process.exit(1);
+    });
+} catch (mongoConnectionError) {
+  logger.error('Критическая ошибка при настройке подключения к MongoDB:', mongoConnectionError);
+  process.exit(1);
+}
 
 // Настройка Telegram бота
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
-
-// Обработка ошибок бота
-bot.on('polling_error', (error) => {
-  logger.error(`Ошибка соединения с Telegram API: ${error.message}`);
-});
-
-// Обработка команды /start
-bot.onText(/\/start/, async (msg) => {
-  const chatId = msg.chat.id;
-  try {
-    logger.info(`Получена команда /start от пользователя ${chatId}`);
-    // Создаем кнопку для открытия Mini App
-    await bot.sendMessage(chatId, 'Добро пожаловать! Нажмите кнопку ниже, чтобы открыть приложение напоминаний:', {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: 'Открыть приложение', web_app: { url: process.env.WEBHOOK_URL } }]
-        ]
+let bot;
+try {
+  if (!process.env.BOT_TOKEN) {
+    logger.warn('BOT_TOKEN не установлен. Бот Telegram не будет запущен.');
+  } else {
+    bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+    
+    // Обработка ошибок бота
+    bot.on('polling_error', (error) => {
+      logger.error(`Ошибка соединения с Telegram API: ${error.message}`);
+    });
+    
+    // Обработка команды /start
+    bot.onText(/\/start/, async (msg) => {
+      const chatId = msg.chat.id;
+      try {
+        logger.info(`Получена команда /start от пользователя ${chatId}`);
+        // Создаем кнопку для открытия Mini App
+        await bot.sendMessage(chatId, 'Добро пожаловать! Нажмите кнопку ниже, чтобы открыть приложение напоминаний:', {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: 'Открыть приложение', web_app: { url: process.env.WEBHOOK_URL } }]
+            ]
+          }
+        });
+        logger.info(`User ${chatId} started bot`);
+      } catch (error) {
+        logger.error(`Error sending message to user ${chatId}:`, error);
+        try {
+          await bot.sendMessage(chatId, 'Произошла ошибка.');
+        } catch (sendError) {
+          logger.error(`Не удалось отправить сообщение об ошибке пользователю ${chatId}:`, sendError);
+        }
       }
     });
-    logger.info(`User ${chatId} started bot`);
-  } catch (error) {
-    logger.error(`Error sending message to user ${chatId}:`, error);
-    bot.sendMessage(chatId, 'Произошла ошибка.');
   }
-});
+} catch (botError) {
+  logger.error('Ошибка при инициализации бота Telegram:', botError);
+}
 
 // Защита API маршрутов (отключено в режиме разработки)
 if (NODE_ENV === 'production') {
@@ -108,8 +148,13 @@ if (NODE_ENV === 'production') {
 }
 
 // API маршруты
-app.use('/api/reminders', require('./routes/reminders'));
-app.use('/api/users', require('./routes/users'));
+try {
+  app.use('/api/reminders', require('./routes/reminders'));
+  app.use('/api/users', require('./routes/users'));
+} catch (routesError) {
+  logger.error('Ошибка при инициализации маршрутов API:', routesError);
+  process.exit(1);
+}
 
 // Health check эндпоинт для проверки работоспособности API
 app.get('/api/health', (req, res) => {
@@ -124,23 +169,13 @@ app.get('*', (req, res) => {
 // Глобальная обработка ошибок
 app.use(errorHandler);
 
-// Отлавливаем необработанные исключения
-process.on('uncaughtException', (error) => {
-  logger.error('Необработанное исключение:', error);
-  
-  // В production режиме останавливаем сервер при критических ошибках
-  if (NODE_ENV === 'production') {
-    process.exit(1);
-  }
-});
-
-// Отлавливаем необработанные Promise rejection
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Необработанный Promise rejection:', reason);
-});
-
 // Запуск сервера
-app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
-  logger.info(`API documentation available at /api/docs`);
-}); 
+try {
+  app.listen(PORT, '0.0.0.0', () => {
+    logger.info(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
+    logger.info(`API documentation available at /api/docs`);
+  });
+} catch (serverError) {
+  logger.error('Ошибка при запуске сервера:', serverError);
+  process.exit(1);
+} 

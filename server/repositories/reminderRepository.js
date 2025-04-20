@@ -1,31 +1,6 @@
 const mongoose = require('mongoose');
+const Reminder = require('../models/Reminder');
 const { logger } = require('../utils/logger');
-
-const reminderSchema = new mongoose.Schema({
-  telegramId: {
-    type: String,
-    required: true
-  },
-  text: {
-    type: String,
-    required: true
-  },
-  date: {
-    type: Date,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'sent'],
-    default: 'pending'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const Reminder = mongoose.model('Reminder', reminderSchema);
 
 /**
  * Репозиторий для работы с моделью Reminder

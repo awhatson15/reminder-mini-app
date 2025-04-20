@@ -6,6 +6,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Box, Container, ThemeProvider, Alert, Button } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import 'dayjs/locale/ru';
+import WebApp from '@twa-dev/sdk';
 
 // Импорт темы и контекста
 import createNeumorphicTheme from './theme';
@@ -77,7 +78,7 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
         setError(null);
         
         // Получаем данные пользователя из Telegram WebApp
-        const initData = window.Telegram?.WebApp?.initData || '';
+        const initData = WebApp.initData || '';
         
         if (!initData && !telegramInitialized) {
           console.warn('Не удалось получить initData, используем тестовые данные');
@@ -95,8 +96,7 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
         }
         
         // Извлекаем информацию о пользователе
-        const userStr = new URLSearchParams(initData).get('user');
-        const userData = userStr ? JSON.parse(userStr) : null;
+        const userData = initData ? WebApp.initDataUnsafe?.user : null;
         
         if (!userData && !telegramInitialized) {
           console.error('Не удалось получить данные пользователя');

@@ -4,6 +4,7 @@
  */
 
 import { createTheme } from '@mui/material/styles';
+import WebApp from '@twa-dev/sdk';
 
 /**
  * Проверяет, используется ли темная тема
@@ -11,9 +12,8 @@ import { createTheme } from '@mui/material/styles';
  */
 export const isDarkMode = () => {
   return (
-    window.Telegram?.WebApp?.colorScheme === 'dark' || 
-    window.matchMedia?.('(prefers-color-scheme: dark)').matches || 
-    false
+    WebApp.colorScheme === 'dark' ||
+    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
   );
 };
 
@@ -22,7 +22,7 @@ export const isDarkMode = () => {
  * @returns {string} Цвет фона
  */
 export const getBackgroundColor = () => {
-  return window.Telegram?.WebApp?.backgroundColor || (isDarkMode() ? '#0E1621' : '#f5f7fa');
+  return WebApp.backgroundColor || (isDarkMode() ? '#0E1621' : '#f5f7fa');
 };
 
 /**
@@ -30,7 +30,7 @@ export const getBackgroundColor = () => {
  * @returns {string} Цвет текста
  */
 export const getTextColor = () => {
-  return window.Telegram?.WebApp?.textColor || (isDarkMode() ? '#FFFFFF' : '#000000');
+  return WebApp.textColor || (isDarkMode() ? '#FFFFFF' : '#000000');
 };
 
 /**
@@ -199,6 +199,11 @@ export const createAppTheme = () => {
 export const setupThemeListener = (callback) => {
   // Слушатель изменения темы в Telegram
   const handleTelegramThemeChange = () => {
+    console.log('Telegram theme changed:', WebApp.colorScheme);
+    // Обновляем тему
+    document.documentElement.setAttribute('data-theme', WebApp.colorScheme);
+    
+    // Если у нас есть обработчик изменения темы, вызываем его
     if (typeof callback === 'function') {
       callback();
     }
@@ -213,8 +218,8 @@ export const setupThemeListener = (callback) => {
   };
 
   // Подписываемся на изменения темы в Telegram если API доступен
-  if (window.Telegram?.WebApp) {
-    window.Telegram.WebApp.onEvent('themeChanged', handleTelegramThemeChange);
+  if (WebApp) {
+    WebApp.onEvent('themeChanged', handleTelegramThemeChange);
   }
 
   // Подписываемся на изменения системной темы
@@ -227,8 +232,8 @@ export const setupThemeListener = (callback) => {
 
   // Возвращаем функцию для удаления слушателей
   return () => {
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.offEvent('themeChanged', handleTelegramThemeChange);
+    if (WebApp) {
+      WebApp.offEvent('themeChanged', handleTelegramThemeChange);
     }
 
     if (typeof mediaQuery.removeEventListener === 'function') {
@@ -253,4 +258,29 @@ export const applyThemeVariables = () => {
   document.documentElement.style.setProperty('--app-card-color', darkMode ? 'rgba(29, 40, 53, 0.7)' : 'rgba(255, 255, 255, 0.9)');
   document.documentElement.style.setProperty('--app-secondary-text-color', darkMode ? '#8CACDA' : '#546e7a');
   document.documentElement.style.setProperty('--app-border-color', darkMode ? '#344859' : '#e0e0e0');
+};
+
+/**
+ * Функция для регистрации обработчика события изменения темы
+ */
+export const registerThemeChangeHandler = () => {
+  // Проверяем поддержку Telegram WebApp
+  try {
+    WebApp.onEvent('themeChanged', handleTelegramThemeChange);
+    console.log('Telegram theme change handler registered');
+  } catch (error) {
+    console.warn('Failed to register Telegram theme change handler:', error);
+  }
+};
+
+/**
+ * Функция для отмены регистрации обработчика события изменения темы
+ */
+export const unregisterThemeChangeHandler = () => {
+  try {
+    WebApp.offEvent('themeChanged', handleTelegramThemeChange);
+    console.log('Telegram theme change handler unregistered');
+  } catch (error) {
+    console.warn('Failed to unregister Telegram theme change handler:', error);
+  }
 }; 

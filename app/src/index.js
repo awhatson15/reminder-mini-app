@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
+import WebApp from '@twa-dev/sdk';
 
 // Инициализация приложения
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -35,26 +36,21 @@ window.appState = {
 
 // Функция для отслеживания состояния инициализации Telegram WebApp
 const initializeTelegramWebApp = () => {
-  if (window.Telegram && window.Telegram.WebApp) {
-    try {
-      console.log('Telegram WebApp API обнаружен, инициализация...');
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
-      console.log('Telegram WebApp API инициализирован успешно');
-      return true;
-    } catch (error) {
-      console.error('Ошибка при инициализации Telegram WebApp:', error);
-      return false;
+  try {
+    console.log('Telegram WebApp API инициализация...');
+    // Инициализация с использованием @twa-dev/sdk
+    WebApp.ready();
+    WebApp.expand();
+    console.log('Telegram WebApp API инициализирован успешно');
+    return true;
+  } catch (error) {
+    console.error('Ошибка при инициализации Telegram WebApp:', error);
+    
+    // Для режима отладки создаем заглушку
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Работаем в режиме отладки без Telegram WebApp API');
     }
-  } else {
-    console.warn('Telegram WebApp API не обнаружен. Работаем в режиме отладки.');
-    // Для отладки установим объект Telegram
-    window.Telegram = window.Telegram || {};
-    window.Telegram.WebApp = window.Telegram.WebApp || {
-      initData: '', // Пустая строка для тестового режима
-      ready: () => console.log('Mock Telegram.WebApp.ready called'),
-      expand: () => console.log('Mock Telegram.WebApp.expand called')
-    };
+    
     return false;
   }
 };

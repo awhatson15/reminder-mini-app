@@ -20,7 +20,8 @@
     "react-virtualized-auto-sizer": "^1.0.7",
     "react-hotkeys-hook": "^4.4.1",
     "date-fns": "^2.30.0",
-    "localforage": "^1.10.0"
+    "localforage": "^1.10.0",
+    "@twa-dev/sdk": "^6.9.0"
   },
   "scripts": {
     "start": "react-scripts start",

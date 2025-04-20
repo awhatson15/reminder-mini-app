@@ -1,21 +1,50 @@
-import React, { useContext } from 'react';
-import { Box } from '@mui/material';
+import React from 'react';
+import { Box, SvgIcon } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { motion } from 'framer-motion';
-import { ThemeContext } from '../../index';
+
+// Стилизованный контейнер для иконки с неоморфным дизайном
+const StyledIconContainer = styled(Box)(({ theme, variant, isClickable, size }) => {
+  // Определяем базовый размер
+  const sizeValue = {
+    small: '32px',
+    medium: '40px',
+    large: '48px',
+  }[size] || '40px';
+  
+  // Определяем тени в зависимости от варианта
+  let boxShadow = theme.palette.neumorphic.boxShadow;
+  
+  if (variant === 'inset') {
+    boxShadow = theme.palette.neumorphic.boxShadowInset;
+  }
+  
+  return {
+    width: sizeValue,
+    height: sizeValue,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    backgroundColor: theme.palette.neumorphic.surface,
+    boxShadow,
+    cursor: isClickable ? 'pointer' : 'default',
+    transition: 'all 0.3s ease',
+  };
+});
 
 /**
- * Неоморфная иконка с эффектами
+ * Неоморфная иконка
  * 
- * @param {Object} props - Свойства компонента
- * @param {React.ReactNode} props.icon - Иконка для отображения
- * @param {string} props.variant - Вариант отображения (flat, raised, inset)
- * @param {string} props.size - Размер иконки (small, medium, large)
+ * @param {Object} props
+ * @param {React.ReactNode} props.icon - Иконка (компонент или элемент)
+ * @param {string} props.variant - Вариант: 'raised' (по умолчанию) или 'inset'
+ * @param {string} props.size - Размер: 'small', 'medium' (по умолчанию), 'large'
  * @param {string} props.color - Цвет иконки
- * @param {boolean} props.clickable - Флаг возможности клика
- * @param {boolean} props.disabled - Флаг отключения
- * @param {Function} props.onClick - Обработчик клика
- * @param {Object} props.sx - Дополнительные стили
- * @returns {JSX.Element}
+ * @param {boolean} props.clickable - Делает иконку кликабельной с визуальными эффектами
+ * @param {function} props.onClick - Обработчик клика
+ * @param {Object} props.sx - Дополнительные стили для контейнера
+ * @param {Object} props.iconSx - Дополнительные стили для самой иконки
  */
 const NeuIcon = ({
   icon,
@@ -23,140 +52,72 @@ const NeuIcon = ({
   size = 'medium',
   color,
   clickable = false,
-  disabled = false,
   onClick,
   sx = {},
+  iconSx = {},
   ...props
 }) => {
-  const { isDarkMode } = useContext(ThemeContext);
-
-  // Определение размеров
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'small':
-        return {
-          container: 36,
-          icon: 18,
-        };
-      case 'large':
-        return {
-          container: 64,
-          icon: 32,
-        };
-      case 'medium':
-      default:
-        return {
-          container: 48,
-          icon: 24,
-        };
-    }
-  };
-
-  const sizeStyles = getSizeStyles();
-
-  // Определение цветов и теней
-  const lightShadow = isDarkMode 
-    ? 'rgba(255, 255, 255, 0.05)' 
-    : 'rgba(255, 255, 255, 0.8)';
+  // Определение цвета иконки
+  const iconColor = color || (variant === 'inset' ? '#7A7A7A' : '#3D9DF6');
   
-  const darkShadow = isDarkMode 
-    ? 'rgba(0, 0, 0, 0.7)' 
-    : 'rgba(0, 0, 0, 0.1)';
-
-  // Цвет иконки
-  const iconColor = color || (isDarkMode ? '#e0e0e0' : '#333333');
-
-  // Определение стилей в зависимости от варианта
-  const getShadowStyles = () => {
-    switch (variant) {
-      case 'flat':
-        return {
-          boxShadow: 'none',
-          border: `1px solid ${isDarkMode ? '#333' : '#e0e0e0'}`,
-        };
-      case 'inset':
-        return {
-          boxShadow: `inset 3px 3px 6px ${darkShadow}, inset -3px -3px 6px ${lightShadow}`,
-        };
-      case 'raised':
-      default:
-        return {
-          boxShadow: `3px 3px 6px ${darkShadow}, -3px -3px 6px ${lightShadow}`,
-        };
-    }
-  };
-
-  // Анимационные варианты
+  // Анимации для иконки
   const iconVariants = {
-    initial: {
-      ...getShadowStyles(),
-    },
-    hover: clickable && !disabled ? {
+    hover: clickable ? {
+      y: -2,
       boxShadow: variant === 'inset' 
-        ? `inset 4px 4px 8px ${darkShadow}, inset -4px -4px 8px ${lightShadow}`
-        : variant === 'flat'
-        ? 'none'
-        : `4px 4px 8px ${darkShadow}, -4px -4px 8px ${lightShadow}`,
-      scale: variant === 'inset' ? 0.98 : 1.05,
+        ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.15), inset -2px -2px 5px rgba(255, 255, 255, 0.7)'
+        : '7px 7px 14px rgba(0, 0, 0, 0.15), -7px -7px 14px rgba(255, 255, 255, 1)',
       transition: { duration: 0.3 }
     } : {},
-    tap: clickable && !disabled ? {
+    tap: clickable ? {
+      y: 0,
       scale: 0.95,
-      boxShadow: variant === 'inset'
-        ? getShadowStyles().boxShadow
-        : variant === 'flat'
-        ? 'none'
-        : `2px 2px 4px ${darkShadow}, -2px -2px 4px ${lightShadow}`,
+      boxShadow: 'inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -4px -4px 8px rgba(255, 255, 255, 0.7)',
       transition: { duration: 0.1 }
-    } : {},
-  };
-
-  // Базовые стили
-  const containerStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: sizeStyles.container,
-    height: sizeStyles.container,
-    borderRadius: '50%',
-    backgroundColor: isDarkMode ? '#2a2a2a' : '#f0f0f0',
-    color: iconColor,
-    transition: 'all 0.3s ease',
-    opacity: disabled ? 0.5 : 1,
-    cursor: (clickable && !disabled) ? 'pointer' : 'default',
-    ...getShadowStyles(),
-    ...sx,
+    } : {}
   };
 
   return (
-    <Box
+    <StyledIconContainer
       component={motion.div}
-      initial="initial"
-      whileHover={clickable && !disabled ? "hover" : ""}
-      whileTap={clickable && !disabled ? "tap" : ""}
+      whileHover="hover"
+      whileTap={clickable ? "tap" : ""}
       variants={iconVariants}
-      onClick={clickable && !disabled ? onClick : undefined}
-      sx={containerStyles}
+      variant={variant}
+      isClickable={clickable}
+      size={size}
+      onClick={clickable ? onClick : undefined}
+      sx={sx}
       {...props}
     >
-      {/* Обертка для иконки с центрированием */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: sizeStyles.icon,
-          height: sizeStyles.icon,
-          fontSize: sizeStyles.icon,
-          '& > *': {
-            width: '100%',
-            height: '100%',
+      {React.isValidElement(icon) ? (
+        React.cloneElement(icon, {
+          style: {
+            fontSize: {
+              small: '16px',
+              medium: '20px',
+              large: '24px',
+            }[size] || '20px',
+            color: iconColor,
+            ...iconSx,
           }
-        }}
-      >
-        {icon}
-      </Box>
-    </Box>
+        })
+      ) : (
+        <SvgIcon
+          sx={{
+            fontSize: {
+              small: '16px',
+              medium: '20px',
+              large: '24px',
+            }[size] || '20px',
+            color: iconColor,
+            ...iconSx
+          }}
+        >
+          {icon}
+        </SvgIcon>
+      )}
+    </StyledIconContainer>
   );
 };
 

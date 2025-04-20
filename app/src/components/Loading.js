@@ -1,82 +1,94 @@
-import React, { useContext } from 'react';
-import { Box, Typography, useTheme, CircularProgress } from '@mui/material';
+import React from 'react';
+import { Box, CircularProgress, Typography, styled } from '@mui/material';
 import { motion } from 'framer-motion';
-import { ThemeContext } from '../index';
 import { NeuCard } from './neumorphic';
 
+// Стилизованный компонент загрузки в неоморфном стиле
+const LoadingContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: '100vh',
+  background: theme.palette.background.default,
+}));
+
+// Анимация логотипа
+const logoVariants = {
+  initial: { scale: 0.8, opacity: 0 },
+  animate: { 
+    scale: 1, 
+    opacity: 1,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
+// Анимация текста
+const textVariants = {
+  initial: { y: 10, opacity: 0 },
+  animate: { 
+    y: 0, 
+    opacity: 1,
+    transition: { delay: 0.3, duration: 0.5, ease: "easeOut" }
+  }
+};
+
+// Анимация прогресса
+const progressVariants = {
+  initial: { opacity: 0 },
+  animate: { 
+    opacity: 1,
+    transition: { delay: 0.5, duration: 0.5 }
+  }
+};
+
 /**
- * Компонент загрузки с неоморфным дизайном
- * 
- * @param {Object} props - свойства компонента
- * @param {string} props.message - текст сообщения загрузки
- * @returns {JSX.Element} компонент загрузки
+ * Компонент отображения загрузки приложения
  */
-const Loading = ({ message = 'Загрузка приложения...' }) => {
-  const theme = useTheme();
-  const { isDarkMode } = useContext(ThemeContext);
-  
-  // Анимация для вращения логотипа/индикатора
-  const spinAnimation = {
-    animate: {
-      rotate: 360,
-      transition: {
-        duration: 2,
-        ease: "linear",
-        repeat: Infinity
-      }
-    }
-  };
-  
+const Loading = () => {
   return (
-    <Box
-      sx={{
-        height: '100vh',
-        width: '100vw',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: isDarkMode ? '#1A1D23' : '#E6EEF8',
-      }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
+    <LoadingContainer>
+      <NeuCard
+        component={motion.div}
+        initial="initial"
+        animate="animate"
+        variants={logoVariants}
+        sx={{ p: 4, mb: 3 }}
       >
-        <NeuCard
-          variant="raised"
-          sx={{
-            p: 4,
-            width: 280,
-            textAlign: 'center',
-            backgroundColor: isDarkMode ? 'rgba(38, 42, 51, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(10px)',
+        <Typography 
+          variant="h4" 
+          component="div" 
+          sx={{ 
+            fontWeight: 600, 
+            color: 'primary.main',
+            textAlign: 'center'
           }}
         >
-          <Box sx={{ mb: 3 }}>
-            <motion.div
-              animate="animate"
-              variants={spinAnimation}
-            >
-              <CircularProgress 
-                size={60} 
-                thickness={4} 
-                color="primary" 
-              />
-            </motion.div>
-          </Box>
-          
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            {message}
-          </Typography>
-          
-          <Typography variant="body2" color="text.secondary">
-            Пожалуйста, подождите...
-          </Typography>
-        </NeuCard>
-      </motion.div>
-    </Box>
+          Reminder
+        </Typography>
+      </NeuCard>
+      
+      <Box 
+        component={motion.div}
+        initial="initial"
+        animate="animate"
+        variants={progressVariants}
+        sx={{ mb: 3 }}
+      >
+        <CircularProgress color="primary" size={40} thickness={4} />
+      </Box>
+      
+      <Typography 
+        component={motion.p}
+        initial="initial"
+        animate="animate"
+        variants={textVariants}
+        variant="body1" 
+        color="text.secondary"
+      >
+        Загрузка приложения...
+      </Typography>
+    </LoadingContainer>
   );
 };
 

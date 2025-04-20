@@ -1,31 +1,40 @@
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React, { useContext } from 'react';
+import { Box, Typography, styled } from '@mui/material';
+import { UserContext } from '../App';
 import { NeuCard } from './neumorphic';
 
+// Стилизованный логотип
+const Logo = styled(Typography)(({ theme }) => ({
+  fontWeight: 600,
+  fontSize: '20px',
+  color: theme.palette.primary.main,
+  textShadow: '1px 1px 1px rgba(0, 0, 0, 0.05)',
+  letterSpacing: '0.5px',
+}));
+
+// Стилизованное имя пользователя
+const Username = styled(Typography)(({ theme }) => ({
+  fontSize: '14px',
+  color: theme.palette.text.secondary,
+  fontWeight: 400,
+}));
+
 /**
- * Компонент статус-бара с основной информацией
- * @param {Object} props - Свойства компонента
- * @param {Object} props.user - Информация о пользователе
- * @param {string} props.user.name - Имя пользователя
+ * Компонент строки состояния приложения
+ * Отображает логотип и имя пользователя
  */
-const StatusBar = ({ user }) => {
+const StatusBar = () => {
+  const { user } = useContext(UserContext);
+  
+  const fullName = user ? 
+    `${user.firstName || ''} ${user.lastName || ''}`.trim() : 
+    'Гость';
+  
   return (
-    <NeuCard variant="flat" sx={{ mb: 3 }}>
-      <Box sx={{ 
-        p: 2, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between'
-      }}>
-        <Typography variant="h6" component="div">
-          Напоминания
-        </Typography>
-        
-        {user && (
-          <Typography variant="body2" color="text.secondary">
-            {user.name}
-          </Typography>
-        )}
+    <NeuCard variant="raised" sx={{ mb: 3, py: 1.5, px: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Logo variant="h1">Reminder</Logo>
+        <Username>{fullName}</Username>
       </Box>
     </NeuCard>
   );

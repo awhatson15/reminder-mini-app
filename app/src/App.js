@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, createContext } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Box, Container, Paper, IconButton, useTheme } from '@mui/material';
+import { Box, Container, ThemeProvider } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
-import { DarkMode, LightMode } from '@mui/icons-material';
 import 'dayjs/locale/ru';
 
-// Импорт контекста темы
-import { ThemeContext } from './index';
+// Импорт темы и контекста
+import createNeumorphicTheme from './theme';
 
 // Компоненты
 import CalendarView from './components/CalendarView';
@@ -20,7 +19,7 @@ import Loading from './components/Loading';
 import StatusBar from './components/StatusBar';
 
 // Контекст для пользовательских данных
-export const UserContext = React.createContext(null);
+export const UserContext = createContext(null);
 
 // Анимации для переходов страниц
 const pageVariants = {
@@ -64,11 +63,10 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
   
-  // Получаем контекст темы
-  const { toggleTheme, isDarkMode } = useContext(ThemeContext);
-
+  // Создаем неоморфную тему
+  const theme = createNeumorphicTheme(false); // Светлая тема по умолчанию
+  
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -152,77 +150,52 @@ const App = () => {
     transition: 'background 0.5s ease',
   };
   
-  // Кнопка переключения темы
-  const ThemeToggleButton = () => (
-    <IconButton 
-      onClick={toggleTheme}
-      sx={{
-        position: 'absolute',
-        top: '16px',
-        right: '16px',
-        zIndex: 100,
-        background: theme.palette.background.paper,
-        boxShadow: theme.palette.neumorphic.boxShadow,
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: theme.palette.neumorphic.boxShadowElevated,
-        },
-        '&:active': {
-          transform: 'translateY(0px)',
-          boxShadow: theme.palette.neumorphic.active,
-        },
-      }}
-    >
-      {isDarkMode ? <LightMode /> : <DarkMode />}
-    </IconButton>
-  );
-  
   // Пользователь всегда должен быть определен (либо реальный, либо тестовый)
   return (
-    <UserContext.Provider value={{ user }}>
-      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-        <Box sx={containerStyles}>
-          <ThemeToggleButton />
-          <Container 
-            maxWidth="sm" 
-            disableGutters
-            sx={{ 
-              position: 'relative',
-              pb: 2,
-            }}
-          >
-            <Box sx={{ 
-              padding: '16px', 
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              <StatusBar />
-              <AnimatePresence mode="wait">
-                <Routes location={location} key={location.pathname}>
-                  <Route path="/" element={
-                    <AnimatedPage>
-                      <CalendarView />
-                    </AnimatedPage>
-                  } />
-                  <Route path="/add" element={
-                    <AnimatedPage>
-                      <AddReminder />
-                    </AnimatedPage>
-                  } />
-                  <Route path="/edit/:id" element={
-                    <AnimatedPage>
-                      <EditReminder />
-                    </AnimatedPage>
-                  } />
-                </Routes>
-              </AnimatePresence>
-            </Box>
-          </Container>
-          <Navigation />
-        </Box>
-      </LocalizationProvider>
-    </UserContext.Provider>
+    <ThemeProvider theme={theme}>
+      <UserContext.Provider value={{ user }}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
+          <Box sx={containerStyles}>
+            <Container 
+              maxWidth="sm" 
+              disableGutters
+              sx={{ 
+                position: 'relative',
+                pb: 2,
+              }}
+            >
+              <Box sx={{ 
+                padding: '16px', 
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <StatusBar />
+                <AnimatePresence mode="wait">
+                  <Routes location={location} key={location.pathname}>
+                    <Route path="/" element={
+                      <AnimatedPage>
+                        <CalendarView />
+                      </AnimatedPage>
+                    } />
+                    <Route path="/add" element={
+                      <AnimatedPage>
+                        <AddReminder />
+                      </AnimatedPage>
+                    } />
+                    <Route path="/edit/:id" element={
+                      <AnimatedPage>
+                        <EditReminder />
+                      </AnimatedPage>
+                    } />
+                  </Routes>
+                </AnimatePresence>
+              </Box>
+            </Container>
+            <Navigation />
+          </Box>
+        </LocalizationProvider>
+      </UserContext.Provider>
+    </ThemeProvider>
   );
 };
 

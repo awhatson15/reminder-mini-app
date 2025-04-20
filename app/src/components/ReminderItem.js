@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   Card,
   CardContent,
@@ -6,7 +6,8 @@ import {
   Box,
   IconButton,
   Avatar,
-  Chip
+  Chip,
+  useTheme
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -27,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { getDaysUntil, getRelativeDateString } from '../utils/dateUtils';
 import { plural } from '../utils/textUtils';
+import { ThemeContext } from '../index';
 
 /**
  * Получает иконку для группы напоминания
@@ -48,34 +50,44 @@ const getGroupIcon = (group) => {
 /**
  * Получает стиль карточки в зависимости от типа и срочности напоминания
  * @param {Object} reminder - объект напоминания
+ * @param {boolean} isDarkMode - режим темы
  * @returns {Object} объект стилей
  */
-const getCardStyle = (reminder) => {
+const getCardStyle = (reminder, theme, isDarkMode) => {
   const daysUntil = getDaysUntil(reminder.date);
+  
+  // Базовые неоморфные тени
+  const neuShadows = isDarkMode 
+    ? '5px 5px 10px rgba(0, 0, 0, 0.7), -5px -5px 10px rgba(255, 255, 255, 0.05)'
+    : '5px 5px 10px rgba(0, 0, 0, 0.15), -5px -5px 10px rgba(255, 255, 255, 0.7)';
   
   // Стиль для дней рождения
   if (reminder.type === 'birthday') {
     return {
-      background: 'linear-gradient(135deg, #FF6B6B 0%, #FFB88C 100%)',
-      boxShadow: '0 4px 20px rgba(255, 107, 107, 0.3)'
+      background: theme.palette.typeColors.birthday,
+      boxShadow: neuShadows,
+      border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   }
   
   // Стиль в зависимости от срочности
   if (daysUntil === 0) {
     return {
-      background: 'linear-gradient(135deg, #FF512F 0%, #DD2476 100%)',
-      boxShadow: '0 4px 20px rgba(221, 36, 118, 0.3)'
+      background: theme.palette.typeColors.urgent,
+      boxShadow: neuShadows,
+      border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   } else if (daysUntil <= 3) {
     return {
-      background: 'linear-gradient(135deg, #FA8BFF 0%, #2BD2FF 100%)',
-      boxShadow: '0 4px 20px rgba(42, 210, 255, 0.3)'
+      background: theme.palette.typeColors.soon,
+      boxShadow: neuShadows,
+      border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   } else {
     return {
-      background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
-      boxShadow: '0 4px 20px rgba(168, 224, 99, 0.3)'
+      background: theme.palette.typeColors.personal,
+      boxShadow: neuShadows,
+      border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   }
 };
@@ -92,21 +104,76 @@ const getCardStyle = (reminder) => {
 const ReminderItem = ({ reminder, onEdit, onDelete }) => {
   if (!reminder) return null;
   
+  const theme = useTheme();
+  const { isDarkMode } = useContext(ThemeContext);
   const daysUntil = getDaysUntil(reminder.date);
-  const cardStyle = getCardStyle(reminder);
+  const cardStyle = getCardStyle(reminder, theme, isDarkMode);
+
+  // Анимация для hover эффекта
+  const hoverAnimation = {
+    rest: { 
+      scale: 1,
+      boxShadow: isDarkMode 
+        ? '5px 5px 10px rgba(0, 0, 0, 0.7), -5px -5px 10px rgba(255, 255, 255, 0.05)'
+        : '5px 5px 10px rgba(0, 0, 0, 0.15), -5px -5px 10px rgba(255, 255, 255, 0.7)',
+      y: 0,
+      transition: {
+        duration: 0.3,
+        type: 'spring',
+        stiffness: 300
+      }
+    },
+    hover: { 
+      scale: 1.03,
+      boxShadow: isDarkMode 
+        ? '10px 10px 20px rgba(0, 0, 0, 0.8), -10px -10px 20px rgba(255, 255, 255, 0.07)'
+        : '10px 10px 20px rgba(0, 0, 0, 0.2), -10px -10px 20px rgba(255, 255, 255, 0.9)',
+      y: -5,
+      transition: {
+        duration: 0.4,
+        type: 'spring',
+        stiffness: 200
+      }
+    }
+  };
+
+  // Стили для кнопок
+  const buttonStyle = {
+    color: '#fff',
+    background: 'rgba(255, 255, 255, 0.15)',
+    backdropFilter: 'blur(4px)',
+    boxShadow: isDarkMode
+      ? '2px 2px 5px rgba(0, 0, 0, 0.3), -2px -2px 5px rgba(255, 255, 255, 0.05)'
+      : '2px 2px 5px rgba(255, 255, 255, 0.3), -2px -2px 5px rgba(255, 255, 255, 0.8)',
+    transition: 'all 0.3s',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: isDarkMode
+        ? '4px 4px 8px rgba(0, 0, 0, 0.4), -2px -2px 5px rgba(255, 255, 255, 0.07)'
+        : '4px 4px 8px rgba(0, 0, 0, 0.15), -2px -2px 5px rgba(255, 255, 255, 1)',
+      background: 'rgba(255, 255, 255, 0.25)',
+    },
+    '&:active': {
+      boxShadow: isDarkMode
+        ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.4), inset -2px -2px 5px rgba(255, 255, 255, 0.05)'
+        : 'inset 2px 2px 5px rgba(0, 0, 0, 0.1), inset -2px -2px 5px rgba(255, 255, 255, 0.5)',
+      transform: 'translateY(0)',
+    }
+  };
 
   return (
     <motion.div 
-      whileHover={{ scale: 1.02 }}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      initial="rest"
+      whileHover="hover"
+      animate="rest"
+      variants={hoverAnimation}
     >
       <Card 
         sx={{ 
           mb: 2, 
           position: 'relative',
           overflow: 'visible',
+          borderRadius: '20px',
           ...cardStyle
         }}
       >
@@ -116,16 +183,19 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
               sx={{ 
                 bgcolor: 'rgba(255, 255, 255, 0.2)',
                 color: '#fff',
-                mr: 1.5 
+                mr: 1.5,
+                boxShadow: isDarkMode
+                  ? '3px 3px 7px rgba(0, 0, 0, 0.3), -1px -1px 5px rgba(255, 255, 255, 0.07)'
+                  : '3px 3px 7px rgba(0, 0, 0, 0.1), -1px -1px 5px rgba(255, 255, 255, 0.5)',
               }}
             >
               {reminder.type === 'birthday' ? <CakeIcon /> : <EventIcon />}
             </Avatar>
             <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" component="div" fontWeight={600} noWrap>
+              <Typography variant="h6" component="div" fontWeight={700} noWrap>
                 {reminder.title}
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
                 {getRelativeDateString(reminder.date)}
               </Typography>
             </Box>
@@ -135,14 +205,8 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
                 onClick={() => onEdit(reminder._id)}
                 aria-label="Редактировать"
                 sx={{ 
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(4px)',
-                  mr: 1,
-                  '&:hover': { 
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    color: '#fff'
-                  }
+                  ...buttonStyle,
+                  mr: 1
                 }}
               >
                 <EditIcon fontSize="small" />
@@ -151,15 +215,7 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
                 size="small"
                 onClick={() => onDelete(reminder._id)}
                 aria-label="Удалить"
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(4px)',
-                  '&:hover': { 
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    color: '#fff'
-                  }
-                }}
+                sx={buttonStyle}
               >
                 <DeleteIcon fontSize="small" />
               </IconButton>
@@ -172,10 +228,14 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
               sx={{ 
                 mt: 1, 
                 mb: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                bgcolor: 'rgba(255, 255, 255, 0.15)',
                 backdropFilter: 'blur(4px)',
                 p: 1.5,
-                borderRadius: 2
+                borderRadius: 16,
+                boxShadow: isDarkMode
+                  ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.03)'
+                  : 'inset 2px 2px 5px rgba(0, 0, 0, 0.05), inset -2px -2px 5px rgba(255, 255, 255, 0.3)',
+                fontWeight: 500
               }}
             >
               {reminder.description}
@@ -196,7 +256,11 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
                 bgcolor: 'rgba(255, 255, 255, 0.15)',
                 backdropFilter: 'blur(4px)',
                 color: '#fff',
-                fontWeight: 600
+                fontWeight: 600,
+                boxShadow: isDarkMode
+                  ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
+                  : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
+                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
               }}
             />
             
@@ -210,7 +274,11 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
                   backdropFilter: 'blur(4px)',
                   color: '#fff', 
                   fontWeight: 600,
-                  textTransform: 'capitalize'
+                  textTransform: 'capitalize',
+                  boxShadow: isDarkMode
+                    ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
+                    : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
+                  border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
                 }}
               />
             )}
@@ -227,7 +295,11 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
                   bgcolor: 'rgba(255, 255, 255, 0.15)',
                   backdropFilter: 'blur(4px)',
                   color: '#fff',
-                  fontWeight: 600
+                  fontWeight: 600,
+                  boxShadow: isDarkMode
+                    ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
+                    : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
+                  border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
                 }}
               />
             )}
@@ -240,7 +312,11 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
                 bgcolor: 'rgba(255, 255, 255, 0.15)',
                 backdropFilter: 'blur(4px)',
                 color: '#fff',
-                fontWeight: 600
+                fontWeight: 600,
+                boxShadow: isDarkMode
+                  ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
+                  : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
+                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
               }}
             />
           </Box>

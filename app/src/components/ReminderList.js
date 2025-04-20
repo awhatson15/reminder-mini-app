@@ -15,22 +15,62 @@ import {
   DialogTitle,
   Button,
   Snackbar,
-  Alert
+  Alert,
+  Avatar,
+  useTheme,
+  alpha
 } from '@mui/material';
 import { 
   Cake as CakeIcon, 
   Event as EventIcon, 
   Edit as EditIcon, 
   Delete as DeleteIcon,
-  SortByAlpha as SortIcon
+  SortByAlpha as SortIcon,
+  AccessTime as TimeIcon,
+  Sort as SortNameIcon,
+  CalendarMonth as CalendarIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { UserContext } from '../App';
 import Loading from './Loading';
+import { motion } from 'framer-motion';
+import { getDaysUntil } from '../utils/dateUtils';
+
+// Анимация списка
+const listVariants = {
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1
+    }
+  },
+  hidden: {
+    opacity: 0,
+    transition: {
+      when: "afterChildren"
+    }
+  }
+};
+
+// Анимация элемента списка
+const itemVariants = {
+  visible: i => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.05,
+      duration: 0.4,
+      ease: "easeOut"
+    }
+  }),
+  hidden: { opacity: 0, y: 20 }
+};
 
 const ReminderList = () => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
+  const theme = useTheme();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -99,37 +139,6 @@ const ReminderList = () => {
     return `${day} ${monthNames[month - 1]}${year ? ` ${year} г.` : ''}`;
   };
 
-  // Вычисление дней до события
-  const getDaysUntil = (date) => {
-    const now = new Date();
-    const eventDate = new Date();
-    
-    eventDate.setDate(date.day);
-    eventDate.setMonth(date.month - 1);
-    
-    // Если есть год, используем его
-    if (date.year) {
-      eventDate.setFullYear(date.year);
-    } else {
-      // Для дней рождения без года
-      // Если дата уже прошла в этом году, берем следующий год
-      if (
-        eventDate.getMonth() < now.getMonth() ||
-        (eventDate.getMonth() === now.getMonth() && eventDate.getDate() < now.getDate())
-      ) {
-        eventDate.setFullYear(now.getFullYear() + 1);
-      } else {
-        eventDate.setFullYear(now.getFullYear());
-      }
-    }
-    
-    // Разница в днях
-    const diffTime = eventDate - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
-  };
-
   // Сортировка ремайндеров
   const sortedReminders = [...reminders].sort((a, b) => {
     if (sortType === 'date') {
@@ -151,6 +160,37 @@ const ReminderList = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Функция для получения цвета карточки на основе типа и дней до события
+  const getCardStyle = (reminder) => {
+    const daysUntil = getDaysUntil(reminder.date);
+    const isUrgent = daysUntil <= 3;
+    const isSoon = daysUntil <= 7;
+    
+    if (reminder.type === 'birthday') {
+      return {
+        background: isUrgent 
+          ? 'linear-gradient(135deg, #ff6b6b 0%, #d32f2f 100%)' 
+          : isSoon 
+            ? 'linear-gradient(135deg, #4dabf5 0%, #2196f3 100%)' 
+            : 'linear-gradient(135deg, #2AABEE 0%, #0088cc 100%)',
+        boxShadow: isUrgent 
+          ? '0 8px 20px rgba(211, 47, 47, 0.3)' 
+          : '0 8px 20px rgba(0, 136, 204, 0.2)'
+      };
+    } else {
+      return {
+        background: isUrgent 
+          ? 'linear-gradient(135deg, #ff9800 0%, #ed6c02 100%)' 
+          : isSoon 
+            ? 'linear-gradient(135deg, #f57c00 0%, #e65100 100%)' 
+            : 'linear-gradient(135deg, #F57C00 0%, #FF6F00 100%)',
+        boxShadow: isUrgent 
+          ? '0 8px 20px rgba(237, 108, 2, 0.3)' 
+          : '0 8px 20px rgba(245, 124, 0, 0.2)'
+      };
+    }
+  };
+
   if (loading) {
     return <Loading />;
   }
@@ -161,93 +201,195 @@ const ReminderList = () => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        mb: 2
+        mb: 3
       }}>
-        <Typography variant="h5" component="h1">
+        <Typography variant="h5" component="h1" fontWeight="600">
           Мои напоминания
         </Typography>
-        <IconButton onClick={toggleSortType} color="primary" title={`Сортировка: ${sortType === 'date' ? 'по дате' : 'по имени'}`}>
-          <SortIcon />
-        </IconButton>
+        <Button
+          onClick={toggleSortType}
+          color="primary"
+          variant="outlined"
+          size="small"
+          startIcon={sortType === 'date' ? <CalendarIcon /> : <SortNameIcon />}
+          sx={{ borderRadius: 20 }}
+        >
+          {sortType === 'date' ? 'По дате' : 'По имени'}
+        </Button>
       </Box>
 
       {sortedReminders.length === 0 ? (
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Typography variant="body1">
-            У вас пока нет напоминаний. Нажмите "Добавить", чтобы создать новое.
+        <Box sx={{ 
+          textAlign: 'center', 
+          mt: 8,
+          p: 3,
+          bgcolor: alpha(theme.palette.primary.main, 0.05),
+          borderRadius: 4,
+          border: `1px dashed ${alpha(theme.palette.primary.main, 0.3)}`
+        }}>
+          <CalendarIcon sx={{ fontSize: 60, color: alpha(theme.palette.primary.main, 0.4), mb: 2 }} />
+          <Typography variant="h6" color="text.secondary">
+            У вас пока нет напоминаний
           </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Нажмите кнопку "Добавить", чтобы создать новое напоминание
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => navigate('/add')}
+            size="large"
+            sx={{ borderRadius: 8 }}
+          >
+            Добавить напоминание
+          </Button>
         </Box>
       ) : (
-        sortedReminders.map((reminder) => {
-          const daysUntil = getDaysUntil(reminder.date);
-          
-          return (
-            <Card key={reminder._id} sx={{ mb: 2, position: 'relative' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  {reminder.type === 'birthday' ? (
-                    <CakeIcon color="primary" sx={{ mr: 1 }} />
-                  ) : (
-                    <EventIcon color="secondary" sx={{ mr: 1 }} />
-                  )}
-                  <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                    {reminder.title}
-                  </Typography>
-                  <Box>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => navigate(`/edit/${reminder._id}`)}
-                      aria-label="Редактировать"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton 
-                      size="small"
-                      onClick={() => {
-                        setReminderToDelete(reminder);
-                        setDeleteDialogOpen(true);
-                      }}
-                      aria-label="Удалить"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </Box>
-                
-                <Divider sx={{ my: 1 }} />
-                
-                <Typography variant="body2" color="text.secondary">
-                  {formatDate(reminder.date)}
-                </Typography>
-                
-                {reminder.description && (
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    {reminder.description}
-                  </Typography>
-                )}
-                
-                <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between' }}>
-                  <Chip
-                    label={reminder.type === 'birthday' ? 'День рождения' : 'Событие'}
-                    color={reminder.type === 'birthday' ? 'primary' : 'secondary'}
-                    size="small"
-                  />
-                  <Chip
-                    label={`Осталось: ${daysUntil} ${plural(daysUntil, 'день', 'дня', 'дней')}`}
-                    color={daysUntil <= 3 ? 'error' : daysUntil <= 7 ? 'warning' : 'success'}
-                    size="small"
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-          );
-        })
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={listVariants}
+        >
+          {sortedReminders.map((reminder, index) => {
+            const daysUntil = getDaysUntil(reminder.date);
+            const cardStyle = getCardStyle(reminder);
+            
+            return (
+              <motion.div 
+                key={reminder._id} 
+                custom={index} 
+                variants={itemVariants}
+                whileHover={{ scale: 1.02 }}
+              >
+                <Card 
+                  sx={{ 
+                    mb: 2.5, 
+                    position: 'relative',
+                    overflow: 'visible',
+                    ...cardStyle
+                  }}
+                >
+                  <CardContent sx={{ color: '#fff', pb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar
+                        sx={{ 
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#fff',
+                          mr: 1.5 
+                        }}
+                      >
+                        {reminder.type === 'birthday' ? <CakeIcon /> : <EventIcon />}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" component="div" fontWeight={600} noWrap>
+                          {reminder.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          {formatDate(reminder.date)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ ml: 1 }}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => navigate(`/edit/${reminder._id}`)}
+                          aria-label="Редактировать"
+                          sx={{ 
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                            backdropFilter: 'blur(4px)',
+                            mr: 1,
+                            '&:hover': { 
+                              bgcolor: 'rgba(255, 255, 255, 0.2)',
+                              color: '#fff'
+                            }
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small"
+                          onClick={() => {
+                            setReminderToDelete(reminder);
+                            setDeleteDialogOpen(true);
+                          }}
+                          aria-label="Удалить"
+                          sx={{ 
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                            backdropFilter: 'blur(4px)',
+                            '&:hover': { 
+                              bgcolor: 'rgba(255, 255, 255, 0.2)',
+                              color: '#fff'
+                            }
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                    
+                    {reminder.description && (
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          mt: 1, 
+                          mb: 2,
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(4px)',
+                          p: 1.5,
+                          borderRadius: 2
+                        }}
+                      >
+                        {reminder.description}
+                      </Typography>
+                    )}
+                    
+                    <Box sx={{ 
+                      mt: 1, 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center' 
+                    }}>
+                      <Chip
+                        icon={reminder.type === 'birthday' ? <CakeIcon /> : <EventIcon />}
+                        label={reminder.type === 'birthday' ? 'День рождения' : 'Событие'}
+                        size="small"
+                        sx={{ 
+                          bgcolor: 'rgba(255, 255, 255, 0.15)',
+                          backdropFilter: 'blur(4px)',
+                          color: '#fff',
+                          fontWeight: 600
+                        }}
+                      />
+                      <Chip
+                        icon={<TimeIcon />}
+                        label={`${daysUntil} ${plural(daysUntil, 'день', 'дня', 'дней')}`}
+                        size="small"
+                        sx={{ 
+                          bgcolor: 'rgba(255, 255, 255, 0.15)',
+                          backdropFilter: 'blur(4px)',
+                          color: '#fff',
+                          fontWeight: 600
+                        }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       )}
 
       {/* Диалог подтверждения удаления */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1
+          }
+        }}
       >
         <DialogTitle>Удаление напоминания</DialogTitle>
         <DialogContent>
@@ -255,9 +397,21 @@ const ReminderList = () => {
             Вы действительно хотите удалить напоминание "{reminderToDelete?.title}"?
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Отмена</Button>
-          <Button onClick={handleDelete} color="error" autoFocus>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{ borderRadius: 8 }}
+          >
+            Отмена
+          </Button>
+          <Button 
+            onClick={handleDelete} 
+            color="error" 
+            variant="contained"
+            sx={{ borderRadius: 8 }}
+            autoFocus
+          >
             Удалить
           </Button>
         </DialogActions>
@@ -270,7 +424,13 @@ const ReminderList = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          elevation={6}
+          variant="filled"
+          sx={{ width: '100%', borderRadius: 3 }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { Box, Container, Paper } from '@mui/material';
+import { AnimatePresence, motion } from 'framer-motion';
 import 'dayjs/locale/ru';
 
 // Компоненты
@@ -15,10 +17,48 @@ import Loading from './components/Loading';
 // Контекст для пользовательских данных
 export const UserContext = React.createContext(null);
 
+// Анимации для переходов страниц
+const pageVariants = {
+  initial: {
+    opacity: 0,
+    y: 20,
+  },
+  in: {
+    opacity: 1,
+    y: 0,
+  },
+  out: {
+    opacity: 0,
+    y: -20,
+  }
+};
+
+const pageTransition = {
+  type: 'tween',
+  ease: 'anticipate',
+  duration: 0.4
+};
+
+// Компонент анимированной страницы
+const AnimatedPage = ({ children }) => {
+  return (
+    <motion.div
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const initApp = async () => {
@@ -97,14 +137,36 @@ const App = () => {
   return (
     <UserContext.Provider value={{ user }}>
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-        <div style={{ padding: '10px', paddingBottom: '70px' }}>
-          <Routes>
-            <Route path="/" element={<ReminderList />} />
-            <Route path="/add" element={<AddReminder />} />
-            <Route path="/edit/:id" element={<EditReminder />} />
-          </Routes>
+        <Container maxWidth="sm" disableGutters>
+          <Box sx={{ 
+            padding: '16px', 
+            paddingBottom: '76px',
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <AnimatePresence mode="wait">
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={
+                  <AnimatedPage>
+                    <ReminderList />
+                  </AnimatedPage>
+                } />
+                <Route path="/add" element={
+                  <AnimatedPage>
+                    <AddReminder />
+                  </AnimatedPage>
+                } />
+                <Route path="/edit/:id" element={
+                  <AnimatedPage>
+                    <EditReminder />
+                  </AnimatedPage>
+                } />
+              </Routes>
+            </AnimatePresence>
+          </Box>
           <Navigation />
-        </div>
+        </Container>
       </LocalizationProvider>
     </UserContext.Provider>
   );

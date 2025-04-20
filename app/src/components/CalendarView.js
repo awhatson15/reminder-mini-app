@@ -212,37 +212,50 @@ const CalendarView = () => {
     <Box sx={{ width: '100%' }}>
       {/* Заголовок и переключатель режимов */}
       <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
         mb: 2,
         mt: 1 
       }}>
-        <Typography variant="h5" fontWeight="bold">
+        <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
           Мои напоминания
         </Typography>
         
-        <Tabs 
-          value={viewMode} 
-          onChange={(_, newValue) => setViewMode(newValue)}
-          sx={{ minHeight: '36px' }}
+        <Paper 
+          elevation={1}
+          sx={{ 
+            width: '100%', 
+            borderRadius: '16px',
+            overflow: 'hidden'
+          }}
         >
-          <Tab 
-            value="calendar" 
-            icon={<CalendarIcon fontSize="small" />} 
-            sx={{ minWidth: '60px', minHeight: '36px', p: '6px' }} 
-          />
-          <Tab 
-            value="list" 
-            icon={<ListIcon fontSize="small" />} 
-            sx={{ minWidth: '60px', minHeight: '36px', p: '6px' }} 
-          />
-          <Tab 
-            value="timeline" 
-            icon={<TimelineIcon fontSize="small" />} 
-            sx={{ minWidth: '60px', minHeight: '36px', p: '6px' }} 
-          />
-        </Tabs>
+          <Tabs 
+            value={viewMode} 
+            onChange={(_, newValue) => setViewMode(newValue)}
+            variant="fullWidth"
+            sx={{ minHeight: '42px' }}
+          >
+            <Tab 
+              value="calendar" 
+              icon={<CalendarIcon fontSize="small" />} 
+              label="Календарь"
+              sx={{ minHeight: '42px' }} 
+            />
+            <Tab 
+              value="list" 
+              icon={<ListIcon fontSize="small" />}
+              label="Список" 
+              sx={{ minHeight: '42px' }} 
+            />
+            <Tab 
+              value="timeline" 
+              icon={<TimelineIcon fontSize="small" />}
+              label="Лента" 
+              sx={{ minHeight: '42px' }} 
+            />
+          </Tabs>
+        </Paper>
       </Box>
 
       {/* Режим Календарь */}

@@ -12,8 +12,6 @@ import {
 } from '@mui/material';
 import { 
   Add as AddIcon,
-  CalendarMonth as CalendarIcon,
-  ViewList as ListIcon,
   Home as HomeIcon
 } from '@mui/icons-material';
 
@@ -26,11 +24,10 @@ const Navigation = () => {
   const getCurrentRoute = () => {
     const path = location.pathname;
     
-    if (path === '/') return 'calendar';
-    if (path === '/list') return 'list';
+    if (path === '/') return 'home';
     if (path.includes('/add') || path.includes('/edit')) return 'none';
     
-    return 'calendar';
+    return 'home';
   };
   
   // Не показываем кнопку добавления на страницах добавления/редактирования
@@ -51,16 +48,16 @@ const Navigation = () => {
           value={getCurrentRoute()}
           onChange={(_, newValue) => {
             if (newValue !== 'none') {
-              navigate(newValue === 'calendar' ? '/' : `/${newValue}`);
+              navigate(newValue === 'home' ? '/' : `/${newValue}`);
             }
           }}
           showLabels
           sx={{ height: 60 }}
         >
           <BottomNavigationAction
-            label="Календарь"
-            value="calendar"
-            icon={<CalendarIcon />}
+            label="Главная"
+            value="home"
+            icon={<HomeIcon />}
           />
           <BottomNavigationAction
             value="none"
@@ -70,11 +67,6 @@ const Navigation = () => {
               pointerEvents: 'none',
               cursor: 'default'
             }}
-          />
-          <BottomNavigationAction
-            label="Список"
-            value="list"
-            icon={<ListIcon />}
           />
         </BottomNavigation>
         

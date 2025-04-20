@@ -8,7 +8,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import 'dayjs/locale/ru';
 
 // Компоненты
-import ReminderList from './components/ReminderList';
 import CalendarView from './components/CalendarView';
 import AddReminder from './components/AddReminder';
 import EditReminder from './components/EditReminder';
@@ -151,11 +150,6 @@ const App = () => {
                 <Route path="/" element={
                   <AnimatedPage>
                     <CalendarView />
-                  </AnimatedPage>
-                } />
-                <Route path="/list" element={
-                  <AnimatedPage>
-                    <ReminderList />
                   </AnimatedPage>
                 } />
                 <Route path="/add" element={

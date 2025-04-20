@@ -224,7 +224,7 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
     background: theme.palette.background.default,
     minHeight: '100vh',
     position: 'relative',
-    paddingBottom: '70px', // Место под навигацию
+    paddingBottom: '60px', // Уменьшаем отступ под навигацию с 70px до 60px
     paddingTop: '10px',
     transition: 'all 0.5s ease',
   };
@@ -248,11 +248,11 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
                 disableGutters
                 sx={{ 
                   position: 'relative',
-                  pb: 2,
+                  pb: 1, // Уменьшаем нижний отступ контейнера с 2 до 1
                 }}
               >
                 <Box sx={{ 
-                  padding: '16px', 
+                  padding: isMobile ? '12px' : '16px', // Адаптивные отступы в зависимости от размера экрана
                   display: 'flex',
                   flexDirection: 'column'
                 }}>

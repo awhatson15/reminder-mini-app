@@ -4,7 +4,7 @@ import { styled } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 
 // Стилизованная карточка с неоморфным дизайном
-const StyledCard = styled(Box)(({ theme, variant, clickable, noShadow, active }) => {
+const StyledCard = styled(Box)(({ theme, variant, clickable, noShadow, active, compact }) => {
   // Определение стилей теней
   let boxShadow = theme.palette.neumorphic.boxShadow;
   
@@ -18,8 +18,8 @@ const StyledCard = styled(Box)(({ theme, variant, clickable, noShadow, active })
   
   return {
     backgroundColor: theme.palette.neumorphic.surface,
-    borderRadius: '24px',
-    padding: '16px',
+    borderRadius: compact ? '18px' : '24px', // Уменьшенный радиус для компактного режима
+    padding: compact ? '12px' : '16px', // Уменьшенный отступ для компактного режима
     boxShadow,
     transition: 'all 0.3s ease',
     cursor: clickable ? 'pointer' : 'default',
@@ -37,6 +37,7 @@ const StyledCard = styled(Box)(({ theme, variant, clickable, noShadow, active })
  * @param {boolean} props.active - Активное состояние (нажатое)
  * @param {function} props.onClick - Обработчик клика
  * @param {boolean} props.fullWidth - Растягивает на всю ширину
+ * @param {boolean} props.compact - Компактный режим с меньшими отступами
  * @param {Object} props.sx - Дополнительные стили
  */
 const NeuCard = ({
@@ -47,6 +48,7 @@ const NeuCard = ({
   active = false,
   onClick,
   fullWidth = false,
+  compact = false,
   sx = {},
   ...props
 }) => {
@@ -54,7 +56,7 @@ const NeuCard = ({
   const cardVariants = {
     initial: {},
     hover: clickable ? { 
-      y: -4,
+      y: compact ? -2 : -4, // Уменьшаем эффект для компактного режима
       boxShadow: variant === 'inset' 
         ? '2px 2px 5px rgba(0, 0, 0, 0.1), -2px -2px 5px rgba(255, 255, 255, 0.5)'
         : '8px 8px 16px rgba(0, 0, 0, 0.1), -8px -8px 16px rgba(255, 255, 255, 0.8)',
@@ -85,6 +87,7 @@ const NeuCard = ({
       clickable={clickable}
       noShadow={noShadow}
       active={active}
+      compact={compact}
       onClick={clickable ? onClick : undefined}
       sx={styles}
       {...props}

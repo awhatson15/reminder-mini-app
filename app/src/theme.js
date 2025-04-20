@@ -133,14 +133,14 @@ const createNeumorphicTheme = (isDarkMode = false) => {
       },
     },
     shape: {
-      borderRadius: 16,
+      borderRadius: 14,
     },
     components: {
       MuiButton: {
         styleOverrides: {
           root: {
-            borderRadius: 16,
-            padding: '10px 20px',
+            borderRadius: 14,
+            padding: '8px 16px',
             boxShadow: shadows.default,
             textTransform: 'none',
             transition: 'all 0.3s',
@@ -158,7 +158,7 @@ const createNeumorphicTheme = (isDarkMode = false) => {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 24,
+            borderRadius: 18,
             boxShadow: shadows.default,
             background: surface,
             transition: 'all 0.3s',
@@ -173,7 +173,7 @@ const createNeumorphicTheme = (isDarkMode = false) => {
         styleOverrides: {
           root: {
             '& .MuiOutlinedInput-root': {
-              borderRadius: 16,
+              borderRadius: 14,
               boxShadow: shadows.inset,
               '& fieldset': {
                 borderColor: 'transparent',
@@ -215,8 +215,8 @@ const createNeumorphicTheme = (isDarkMode = false) => {
       MuiListItem: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
-            margin: '4px 8px',
+            borderRadius: 10,
+            margin: '3px 6px',
             '&:hover': {
               background: isDarkMode ? '#3D3D3D' : '#F0F0F0',
             },

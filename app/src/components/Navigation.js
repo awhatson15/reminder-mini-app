@@ -19,7 +19,7 @@ const NavContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-around',
   alignItems: 'center',
-  padding: '12px 0',
+  padding: '8px 0',
   backgroundColor: theme.palette.background.default,
   zIndex: 10,
   boxShadow: theme.palette.neumorphic.boxShadow,
@@ -36,7 +36,7 @@ const ActiveIndicator = ({ x }) => (
     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
     sx={{
       position: 'absolute',
-      top: '-5px',
+      top: '-3px',
       left: '50%',
       width: '4px',
       height: '4px',
@@ -89,6 +89,7 @@ const Navigation = () => {
           color={activeIndex === 0 ? 'primary.main' : 'text.secondary'}
           clickable
           onClick={() => navigate('/')}
+          size="small"
         />
       </motion.div>
       
@@ -104,7 +105,7 @@ const Navigation = () => {
           color={activeIndex === 1 ? 'primary.main' : 'text.secondary'}
           clickable
           onClick={() => navigate('/add')}
-          size="large"
+          size="medium"
         />
       </motion.div>
       
@@ -120,6 +121,7 @@ const Navigation = () => {
           color={activeIndex === 2 ? 'primary.main' : 'text.secondary'}
           clickable
           onClick={() => navigate('/settings')}
+          size="small"
         />
       </motion.div>
     </NavContainer>

@@ -35,8 +35,9 @@ const ReminderItem = ({
     <NeuCard 
       variant={completed ? "inset" : "raised"}
       clickable
+      compact={true}
       sx={{ 
-        mb: 2, 
+        mb: 1.5,
         opacity: completed ? 0.75 : 1,
         transition: 'all 0.3s ease',
         overflow: 'hidden'
@@ -46,7 +47,7 @@ const ReminderItem = ({
         display: 'flex', 
         alignItems: 'center',
         justifyContent: 'space-between',
-        p: 1
+        p: 0.75
       }}>
         <Box sx={{ 
           display: 'flex',
@@ -56,23 +57,27 @@ const ReminderItem = ({
           <IconButton 
             onClick={() => onToggleComplete(id)}
             color={completed ? "primary" : "default"}
+            size="small"
             sx={{ 
               transition: 'transform 0.2s ease',
               '&:hover': {
                 transform: 'scale(1.1)'
-              }
+              },
+              padding: '4px'
             }}
           >
-            <CompleteIcon />
+            <CompleteIcon fontSize="small" />
           </IconButton>
           
-          <Box sx={{ ml: 1 }}>
+          <Box sx={{ ml: 0.5 }}>
             <Typography 
-              variant="h6"
+              variant="subtitle1"
               sx={{ 
                 textDecoration: completed ? 'line-through' : 'none',
                 opacity: completed ? 0.7 : 1,
-                transition: 'opacity 0.3s ease'
+                transition: 'opacity 0.3s ease',
+                fontSize: '0.95rem',
+                fontWeight: 500
               }}
             >
               {title}
@@ -81,8 +86,9 @@ const ReminderItem = ({
               variant="body2" 
               color="text.secondary"
               sx={{
-                fontSize: '0.85rem',
-                fontWeight: 'light'
+                fontSize: '0.8rem',
+                fontWeight: 'light',
+                marginTop: '-2px'
               }}
             >
               {formattedDate}
@@ -92,7 +98,7 @@ const ReminderItem = ({
         
         <Box sx={{ 
           display: 'flex',
-          gap: 0.5
+          gap: 0.25
         }}>
           {!completed && (
             <IconButton 
@@ -103,7 +109,8 @@ const ReminderItem = ({
                 '&:hover': {
                   transform: 'scale(1.1)',
                   color: 'primary.main'
-                }
+                },
+                padding: '4px'
               }}
             >
               <EditIcon fontSize="small" />
@@ -118,7 +125,8 @@ const ReminderItem = ({
               '&:hover': {
                 transform: 'scale(1.1)',
                 color: 'error.main'
-              }
+              },
+              padding: '4px'
             }}
           >
             <DeleteIcon fontSize="small" />

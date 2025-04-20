@@ -95,8 +95,10 @@ const TimelineView = ({ reminders }) => {
   };
   
   const formatDate = (date) => {
-    const day = getDayOfWeek(date, 'full');
-    return `${day}, ${date.format('D MMMM YYYY')}`;
+    const { day, month, year } = date;
+    const dateObj = dayjs(new Date(year || new Date().getFullYear(), month - 1, day));
+    const dayName = getDayOfWeek(dateObj.toDate(), 'full');
+    return `${dayName}, ${day} ${dateObj.format('MMMM')} ${year || new Date().getFullYear()}`;
   };
   
   return (
@@ -146,7 +148,7 @@ const TimelineView = ({ reminders }) => {
               const eventIcon = getIconForReminder(reminder);
               const timeLeft = formatTimeLeft(reminder);
               const daysUntil = getDaysUntil(reminder.date);
-              const formattedDate = formatDate(dayjs(reminder.date));
+              const formattedDate = formatDate(reminder.date);
               
               // Определяем цвет маркера времени
               const getTimeChipColor = () => {

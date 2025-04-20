@@ -15,7 +15,11 @@
     "axios": "^1.4.0",
     "react-scripts": "5.0.1",
     "framer-motion": "^10.16.4",
-    "react-spring": "^9.7.2"
+    "react-spring": "^9.7.2",
+    "react-window": "^1.8.9",
+    "react-virtualized-auto-sizer": "^1.0.7",
+    "react-hotkeys-hook": "^4.4.1",
+    "date-fns": "^2.30.0"
   },
   "scripts": {
     "start": "react-scripts start",

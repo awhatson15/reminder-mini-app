@@ -17,7 +17,7 @@ import {
 import {
   Edit as EditIcon,
   Today as TodayIcon,
-  Tomorrow as TomorrowIcon,
+  NextWeek as NextWeekIcon,
   Timer as TimerIcon,
   CheckCircle as CheckCircleIcon,
   PlayArrow as PlayIcon,
@@ -164,7 +164,7 @@ const FocusView = ({ reminders }) => {
               Сегодня
             </ToggleButton>
             <ToggleButton value="tomorrow">
-              <TomorrowIcon sx={{ mr: 1 }} />
+              <NextWeekIcon sx={{ mr: 1 }} />
               Завтра
             </ToggleButton>
             <ToggleButton value="week">

@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-// Запрос разрешения на доступ к контактам
+let cachedContacts = null;
+
+// Запрос разрешения и импорт контактов
 export const requestContactsPermission = async () => {
   try {
     // Проверяем поддержку API
@@ -11,10 +13,13 @@ export const requestContactsPermission = async () => {
     const props = ['name', 'tel', 'email'];
     const opts = { multiple: true };
 
+    // Запрашиваем контакты у пользователя
     const contacts = await navigator.contacts.select(props, opts);
     console.log('Получены контакты:', contacts);
 
     if (contacts.length > 0) {
+      // Сохраняем в кэш
+      cachedContacts = contacts;
       // Сохраняем контакты на сервере
       await axios.post('/api/contacts/sync', { contacts });
       return true;
@@ -30,35 +35,26 @@ export const requestContactsPermission = async () => {
 // Поиск контактов по имени
 export const searchContacts = async (query) => {
   try {
-    // Проверяем поддержку API
-    if ('contacts' in navigator && 'select' in navigator.contacts) {
-      try {
-        const props = ['name', 'tel', 'email'];
-        const opts = { multiple: true };
-        const contacts = await navigator.contacts.select(props, opts);
-        
-        // Фильтруем контакты локально
-        return contacts
-          .filter(contact => 
-            contact.name.some(name => 
-              name.toLowerCase().includes(query.toLowerCase())
-            ) ||
-            contact.tel.some(phone =>
-              phone.includes(query)
-            )
+    // Если есть кэшированные контакты, ищем в них
+    if (cachedContacts) {
+      return cachedContacts
+        .filter(contact => 
+          contact.name.some(name => 
+            name.toLowerCase().includes(query.toLowerCase())
+          ) ||
+          contact.tel.some(phone =>
+            phone.includes(query)
           )
-          .map(contact => ({
-            id: contact.tel[0] || Math.random().toString(), // Используем телефон как ID или генерируем случайный
-            name: contact.name[0],
-            phones: contact.tel,
-            emails: contact.email
-          }));
-      } catch (error) {
-        console.error('Ошибка при работе с контактами:', error);
-      }
+        )
+        .map(contact => ({
+          id: contact.tel[0] || Math.random().toString(),
+          name: contact.name[0],
+          phones: contact.tel,
+          emails: contact.email
+        }));
     }
     
-    // Если API не поддерживается или произошла ошибка, ищем в сохраненных контактах
+    // Если нет кэшированных контактов, ищем на сервере
     const response = await axios.get(`/api/contacts/search?q=${encodeURIComponent(query)}`);
     return response.data;
   } catch (error) {

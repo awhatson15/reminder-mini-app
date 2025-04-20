@@ -8,7 +8,8 @@ import {
   Typography,
   InputAdornment,
   Button,
-  Tooltip
+  Tooltip,
+  Alert
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -25,44 +26,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [hasPermission, setHasPermission] = useState(false);
-  const [checkingPermission, setCheckingPermission] = useState(true);
-  
-  // Проверяем поддержку API при монтировании
-  useEffect(() => {
-    checkPermission();
-  }, []);
-  
-  const checkPermission = async () => {
-    try {
-      if (!('contacts' in navigator && 'select' in navigator.contacts)) {
-        setHasPermission(false);
-        return;
-      }
-      setHasPermission(true);
-    } catch (error) {
-      console.error('Ошибка при проверке поддержки контактов:', error);
-      setHasPermission(false);
-    } finally {
-      setCheckingPermission(false);
-    }
-  };
-  
-  // Запрос разрешения
-  const handleRequestPermission = async () => {
-    try {
-      setLoading(true);
-      await requestContactsPermission();
-      setHasPermission(true);
-      // После получения разрешения, сразу ищем по текущему запросу
-      if (inputValue) {
-        debouncedSearch(inputValue);
-      }
-    } catch (error) {
-      console.error('Ошибка при запросе доступа к контактам:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [importError, setImportError] = useState('');
   
   // Отложенный поиск
   const debouncedSearch = debounce(async (query) => {
@@ -89,11 +53,31 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
     };
   }, []);
   
+  // Запрос разрешения и импорт контактов
+  const handleRequestPermission = async () => {
+    try {
+      setLoading(true);
+      setImportError('');
+      const result = await requestContactsPermission();
+      if (result) {
+        setHasPermission(true);
+        // После успешного импорта, ищем по текущему запросу
+        if (inputValue) {
+          debouncedSearch(inputValue);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка при импорте контактов:', error);
+      setImportError(error.message || 'Ошибка при импорте контактов');
+      setHasPermission(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const handleInputChange = (event, newInputValue) => {
     setInputValue(newInputValue);
-    if (hasPermission) {
-      debouncedSearch(newInputValue);
-    }
+    debouncedSearch(newInputValue);
   };
   
   return (
@@ -155,8 +139,8 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
           noOptionsText="Контакты не найдены"
         />
         
-        {!checkingPermission && !hasPermission && (
-          <Tooltip title="Разрешить доступ к контактам телефона">
+        {!hasPermission && (
+          <Tooltip title="Импортировать контакты телефона">
             <Button
               variant="outlined"
               onClick={handleRequestPermission}
@@ -169,17 +153,21 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
         )}
         
         {hasPermission && (
-          <Tooltip title="Доступ к контактам разрешен">
+          <Tooltip title="Контакты импортированы">
             <CheckIcon color="success" />
           </Tooltip>
         )}
       </Box>
       
-      {!hasPermission && !checkingPermission && (
+      {importError && (
+        <Alert severity="error" sx={{ mt: 1 }} onClose={() => setImportError('')}>
+          {importError}
+        </Alert>
+      )}
+      
+      {!hasPermission && !loading && !importError && (
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          {!('contacts' in navigator && 'select' in navigator.contacts) 
-            ? "Ваш браузер не поддерживает работу с контактами"
-            : "Разрешите доступ к контактам для быстрого поиска"}
+          Импортируйте контакты для быстрого поиска
         </Typography>
       )}
     </Box>

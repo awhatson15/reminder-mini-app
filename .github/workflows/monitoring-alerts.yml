@@ -1,0 +1,47 @@
+name: Health Check & Monitoring
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Каждые 30 минут
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  health_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API endpoint
+        id: api_check
+        uses: jtalk/url-health-check-action@v3
+        with:
+          url: ${{ secrets.APP_URL }}/api/health
+          max-attempts: 3
+          retry-delay: 5s
+          follow-redirect: true
+        continue-on-error: true
+
+      - name: Check frontend availability
+        id: frontend_check
+        uses: jtalk/url-health-check-action@v3
+        with:
+          url: ${{ secrets.APP_URL }}
+          max-attempts: 3
+          retry-delay: 5s
+          follow-redirect: true
+        continue-on-error: true
+
+      - name: Send Telegram notification on failure
+        if: steps.api_check.outcome == 'failure' || steps.frontend_check.outcome == 'failure'
+        uses: appleboy/telegram-action@v0.1.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            🚨 ALERT: Reminder Mini App is DOWN
+            📅 Time: ${{ github.event.repository.updated_at }}
+            
+            API Status: ${{ steps.api_check.outcome }}
+            Frontend Status: ${{ steps.frontend_check.outcome }}
+            
+            Please check the application: ${{ secrets.APP_URL }}
+            
+            Repository: ${{ github.repository }} 

@@ -1,8 +1,8 @@
+version: '3.8'
+
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKER_REGISTRY}/reminder-mini-app:${TAG:-latest}
     container_name: reminder-mini-app
     restart: always
     ports:
@@ -15,8 +15,9 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/reminder-app?directConnection=true
       - BOT_TOKEN=${BOT_TOKEN}
       - WEBHOOK_URL=${WEBHOOK_URL}
-      - NODE_ENV=development
-      - LOG_LEVEL=info
+      - NODE_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     volumes:
       - logs:/app/logs
     networks:
@@ -30,6 +31,7 @@ services:
       retries: 3
       start_period: 40s
     deploy:
+      replicas: ${APP_REPLICAS:-1}
       resources:
         limits:
           cpus: '0.75'
@@ -41,20 +43,26 @@ services:
       - "prometheus.io/scrape=true"
       - "prometheus.io/path=/metrics"
       - "prometheus.io/port=3000"
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls=true"
 
   mongodb:
     image: mongo:6
     restart: always
     container_name: mongodb
-    ports:
-      - "27017:27017"
     volumes:
       - mongodb-data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
     networks:
       - app-network
-    command: ["mongod", "--bind_ip_all"]
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-password}
+    command: ["mongod", "--bind_ip_all", "--auth"]
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://$$MONGO_INITDB_ROOT_USERNAME:$$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/admin --quiet
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,9 +82,8 @@ services:
     restart: always
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml
       - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
     networks:
       - monitoring-network
     command:
@@ -94,8 +101,6 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     restart: always
-    ports:
-      - "3100:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -115,11 +120,71 @@ services:
     depends_on:
       - prometheus
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: always
+    volumes:
+      - ./alertmanager/config.yml:/etc/alertmanager/config.yml
+      - alertmanager_data:/alertmanager
+    networks:
+      - monitoring-network
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring-network
+
+  traefik:
+    image: traefik:v2.9
+    container_name: traefik
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./traefik/dynamic_conf:/etc/traefik/dynamic_conf
+      - ./traefik/acme.json:/acme.json
+    networks:
+      - nginx-network
+    environment:
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
+
 networks:
   app-network:
     driver: bridge
   nginx-network:
-    external: true  # Это позволит контейнерам подключаться к внешней сети
+    external: true
   monitoring-network:
     driver: bridge
 
@@ -131,4 +196,6 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  alertmanager_data:
     driver: local 

@@ -7,6 +7,7 @@ const morgan = require('morgan');
 const mongoose = require('mongoose');
 const TelegramBot = require('node-telegram-bot-api');
 const compression = require('compression');
+const promBundle = require('express-prom-bundle'); // Добавляем Prometheus middleware
 require('express-async-errors'); // Автоматически перехватывает ошибки в async маршрутах
 const { logger } = require('./utils/logger');
 const { startScheduler } = require('./scheduler');
@@ -34,6 +35,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DEFAULT_PAGE_LIMIT = parseInt(process.env.DEFAULT_PAGE_LIMIT || '20', 10);
+
+// Настройка Prometheus
+const metricsMiddleware = promBundle({
+  includeMethod: true,
+  includePath: true,
+  includeStatusCode: true,
+  includeUp: true,
+  customLabels: { app: 'reminder-mini-app' },
+  promClient: {
+    collectDefaultMetrics: {
+      timeout: 5000
+    }
+  }
+});
+
+// Добавляем middleware для сбора метрик Prometheus
+app.use(metricsMiddleware);
 
 // Добавляем глобальные настройки в app.locals
 app.locals = {

@@ -1,0 +1,49 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'job']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'telegram-notifications'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'telegram-critical'
+      continue: true
+    - match:
+        severity: warning
+      receiver: 'telegram-notifications'
+
+receivers:
+  - name: 'telegram-critical'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_CHAT_ID_CRITICAL}
+        parse_mode: 'HTML'
+        message: |
+          🚨 <b>КРИТИЧЕСКАЯ ТРЕВОГА!</b> 🚨
+          <b>Аварийная ситуация:</b> {{ .CommonAnnotations.summary }}
+          <b>Описание:</b> {{ .CommonAnnotations.description }}
+          <b>Время:</b> {{ .StartsAt.Format "02.01.2006 15:04:05" }}
+          <b>Сервер:</b> {{ range .Alerts }}{{ .Labels.instance }}{{ end }}
+
+  - name: 'telegram-notifications'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: 'HTML'
+        message: |
+          ⚠️ <b>Предупреждение</b> ⚠️
+          <b>Событие:</b> {{ .CommonAnnotations.summary }}
+          <b>Описание:</b> {{ .CommonAnnotations.description }}
+          <b>Время:</b> {{ .StartsAt.Format "02.01.2006 15:04:05" }}
+          <b>Сервер:</b> {{ range .Alerts }}{{ .Labels.instance }}{{ end }}
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance'] 

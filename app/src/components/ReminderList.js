@@ -54,6 +54,7 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import ReminderItem from './ReminderItem';
 import { plural } from '../utils/textUtils';
 import { formatDateForDisplay, getDayOfWeek, isToday, isTomorrow } from '../utils/dateUtils';
+import { NeuCard } from './neumorphic';
 
 // Константа с названиями месяцев для форматирования даты
 const MONTH_NAMES = [
@@ -498,32 +499,9 @@ const ReminderList = () => {
       </Box>
 
       {isEmpty && reminders.length === 0 ? (
-        <Box sx={{ 
-          textAlign: 'center', 
-          mt: 8,
-          p: 3,
-          bgcolor: alpha(theme.palette.primary.main, 0.05),
-          borderRadius: 4,
-          border: `1px dashed ${alpha(theme.palette.primary.main, 0.3)}`
-        }}>
-          <CalendarIcon sx={{ fontSize: 60, color: alpha(theme.palette.primary.main, 0.4), mb: 2 }} />
-          <Typography variant="h6" color="text.secondary">
-            {selectedGroup === 'all' 
-              ? 'У вас пока нет напоминаний' 
-              : 'В этой группе нет напоминаний'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={3}>
-            Нажмите кнопку "Добавить", чтобы создать новое напоминание
-          </Typography>
-          <Button 
-            variant="contained" 
-            onClick={() => navigate('/add')}
-            size="large"
-            sx={{ borderRadius: 8 }}
-          >
-            Добавить напоминание
-          </Button>
-        </Box>
+        <NeuCard variant="concave" sx={{ p: 3, textAlign: 'center', mb: 2 }}>
+          <Typography>Нет запланированных напоминаний</Typography>
+        </NeuCard>
       ) : (
         <Box>
           {console.log('Rendering reminder list', {

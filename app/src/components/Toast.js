@@ -32,46 +32,17 @@ const Toast = ({
   const theme = useTheme();
   const { isDarkMode } = useContext(ThemeContext);
   
-  // Определение иконки и цветов в зависимости от типа уведомления
+  // Определение иконки и цвета
   const getTypeProps = () => {
     switch (type) {
-      case 'success':
-        return { 
-          icon: <SuccessIcon />, 
-          color: theme.palette.success.main,
-          bgColor: isDarkMode 
-            ? 'rgba(76, 175, 80, 0.15)' 
-            : 'rgba(76, 175, 80, 0.1)'
-        };
-      case 'error':
-        return { 
-          icon: <ErrorIcon />, 
-          color: theme.palette.error.main,
-          bgColor: isDarkMode 
-            ? 'rgba(244, 67, 54, 0.15)' 
-            : 'rgba(244, 67, 54, 0.1)'
-        };
-      case 'warning':
-        return { 
-          icon: <WarningIcon />, 
-          color: theme.palette.warning.main,
-          bgColor: isDarkMode 
-            ? 'rgba(255, 152, 0, 0.15)' 
-            : 'rgba(255, 152, 0, 0.1)'
-        };
-      case 'info':
-      default:
-        return { 
-          icon: <InfoIcon />, 
-          color: theme.palette.info.main,
-          bgColor: isDarkMode 
-            ? 'rgba(33, 150, 243, 0.15)' 
-            : 'rgba(33, 150, 243, 0.1)'
-        };
+      case 'success': return { icon: <SuccessIcon />, color: theme.palette.success.main };
+      case 'error': return { icon: <ErrorIcon />, color: theme.palette.error.main };
+      case 'warning': return { icon: <WarningIcon />, color: theme.palette.warning.main };
+      case 'info': default: return { icon: <InfoIcon />, color: theme.palette.info.main };
     }
   };
   
-  const { icon, color, bgColor } = getTypeProps();
+  const { icon, color } = getTypeProps();
   
   // Автозакрытие через указанное время
   React.useEffect(() => {
@@ -83,13 +54,6 @@ const Toast = ({
       return () => clearTimeout(timer);
     }
   }, [open, duration, onClose]);
-  
-  // Анимация
-  const variants = {
-    initial: { opacity: 0, y: 20, scale: 0.8 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-    exit: { opacity: 0, y: -20, scale: 0.8 }
-  };
   
   return (
     <AnimatePresence>
@@ -106,10 +70,9 @@ const Toast = ({
           }}
         >
           <motion.div
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            variants={variants}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
             <NeuCard
@@ -123,34 +86,23 @@ const Toast = ({
                 borderLeft: `4px solid ${color}`,
                 borderRadius: '10px',
                 minWidth: '280px',
-                maxWidth: '600px'
               }}
             >
-              <Box sx={{ 
-                color: color,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mr: 1.5
-              }}>
+              <Box sx={{ color: color, mr: 1.5 }}>
                 {icon}
               </Box>
               
               <Typography 
                 variant="body2" 
-                sx={{ 
-                  flexGrow: 1,
-                  fontWeight: 500,
-                  px: 1
-                }}
+                sx={{ flexGrow: 1, fontWeight: 500 }}
               >
                 {message}
               </Typography>
               
               <NeuIcon
                 icon={<CloseIcon fontSize="small" />}
-                variant="inset"
                 size="small"
+                variant="inset"
                 clickable
                 onClick={onClose}
                 sx={{ ml: 1 }}

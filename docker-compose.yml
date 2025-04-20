@@ -11,7 +11,7 @@ services:
       - mongodb
     environment:
       - PORT=3000
-      - MONGO_URI=mongodb://mongodb:27017/reminder-app
+      - MONGO_URI=mongodb://mongodb:27017/reminder-app?directConnection=true
       - BOT_TOKEN=${BOT_TOKEN}
       - WEBHOOK_URL=${WEBHOOK_URL}
       - NODE_ENV=development
@@ -25,12 +25,14 @@ services:
   mongodb:
     image: mongo:6
     restart: always
+    container_name: mongodb
     ports:
       - "27017:27017"
     volumes:
       - mongodb-data:/data/db
     networks:
       - app-network
+    command: ["mongod", "--bind_ip_all"]
 
 networks:
   app-network:

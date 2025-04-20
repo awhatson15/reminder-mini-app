@@ -1,4 +1,4 @@
-// Экспортируем все неоморфные компоненты для простоты импорта
+// Экспортируем неоморфные компоненты для простоты импорта
 export { default as NeuCard } from './NeuCard';
 export { default as NeuButton } from './NeuButton';
 export { default as NeuTextField } from './NeuTextField';

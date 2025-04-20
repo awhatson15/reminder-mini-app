@@ -1,117 +1,47 @@
-import React, { useContext } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CheckCircleOutline as SuccessIcon,
-  ErrorOutline as ErrorIcon,
-  InfoOutlined as InfoIcon,
-  WarningAmber as WarningIcon,
-  Close as CloseIcon
-} from '@mui/icons-material';
-import { ThemeContext } from '../index';
-import { NeuCard, NeuIcon } from './neumorphic';
+import React, { forwardRef } from 'react';
+import { Snackbar, Alert as MuiAlert } from '@mui/material';
+
+// Стилизованный Alert компонент
+const Alert = forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
 /**
- * Компонент всплывающего уведомления
+ * Компонент для отображения уведомлений
  * 
- * @param {Object} props - свойства компонента
- * @param {boolean} props.open - флаг отображения
- * @param {string} props.message - текст сообщения
- * @param {string} props.type - тип сообщения (success, error, warning, info)
- * @param {Function} props.onClose - функция закрытия
- * @param {number} props.duration - длительность отображения в мс
- * @returns {JSX.Element} компонент уведомления
+ * @param {Object} props
+ * @param {boolean} props.open - Флаг открытия уведомления
+ * @param {function} props.onClose - Обработчик закрытия уведомления
+ * @param {string} props.message - Текст сообщения
+ * @param {string} props.severity - Тип уведомления (success, error, warning, info)
+ * @param {number} props.autoHideDuration - Время автоматического скрытия в мс
  */
-const Toast = ({ 
-  open, 
-  message, 
-  type = 'info',
+const Toast = ({
+  open,
   onClose,
-  duration = 5000
+  message,
+  severity = 'info',
+  autoHideDuration = 6000,
+  ...props
 }) => {
-  const theme = useTheme();
-  const { isDarkMode } = useContext(ThemeContext);
-  
-  // Определение иконки и цвета
-  const getTypeProps = () => {
-    switch (type) {
-      case 'success': return { icon: <SuccessIcon />, color: theme.palette.success.main };
-      case 'error': return { icon: <ErrorIcon />, color: theme.palette.error.main };
-      case 'warning': return { icon: <WarningIcon />, color: theme.palette.warning.main };
-      case 'info': default: return { icon: <InfoIcon />, color: theme.palette.info.main };
-    }
-  };
-  
-  const { icon, color } = getTypeProps();
-  
-  // Автозакрытие через указанное время
-  React.useEffect(() => {
-    if (open && duration !== 0) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, duration);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [open, duration, onClose]);
-  
   return (
-    <AnimatePresence>
-      {open && (
-        <Box
-          sx={{
-            position: 'fixed',
-            bottom: 20,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 9999,
-            maxWidth: 'calc(100% - 32px)',
-            width: 'auto'
-          }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <NeuCard
-              variant="raised"
-              sx={{
-                backgroundColor: isDarkMode ? 'rgba(38, 42, 51, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '10px 16px',
-                borderLeft: `4px solid ${color}`,
-                borderRadius: '10px',
-                minWidth: '280px',
-              }}
-            >
-              <Box sx={{ color: color, mr: 1.5 }}>
-                {icon}
-              </Box>
-              
-              <Typography 
-                variant="body2" 
-                sx={{ flexGrow: 1, fontWeight: 500 }}
-              >
-                {message}
-              </Typography>
-              
-              <NeuIcon
-                icon={<CloseIcon fontSize="small" />}
-                size="small"
-                variant="inset"
-                clickable
-                onClick={onClose}
-                sx={{ ml: 1 }}
-              />
-            </NeuCard>
-          </motion.div>
-        </Box>
-      )}
-    </AnimatePresence>
+    <Snackbar
+      open={open}
+      autoHideDuration={autoHideDuration}
+      onClose={onClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      sx={{ 
+        '& .MuiAlert-root': {
+          borderRadius: '16px',
+          fontSize: '14px',
+        }
+      }}
+      {...props}
+    >
+      <Alert onClose={onClose} severity={severity} sx={{ width: '100%' }}>
+        {message}
+      </Alert>
+    </Snackbar>
   );
 };
 

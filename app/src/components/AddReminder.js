@@ -41,6 +41,7 @@ import dayjs from 'dayjs';
 import axios from 'axios';
 import { UserContext } from '../App';
 import { motion } from 'framer-motion';
+import Toast from './Toast';
 
 const AddReminder = () => {
   const { user } = useContext(UserContext);
@@ -452,22 +453,12 @@ const AddReminder = () => {
         </form>
       </Paper>
       
-      <Snackbar
+      <Toast 
         open={snackbar.open}
-        autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
-          elevation={6}
-          variant="filled"
-          sx={{ width: '100%', borderRadius: 3 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        message={snackbar.message}
+        severity={snackbar.severity}
+      />
     </Box>
   );
 };

@@ -35,6 +35,8 @@ import { UserContext } from '../App';
 import Loading from './Loading';
 import { motion } from 'framer-motion';
 import { getDaysUntil } from '../utils/dateUtils';
+import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 
 // Анимация списка
 const listVariants = {
@@ -381,59 +383,24 @@ const ReminderList = () => {
       )}
 
       {/* Диалог подтверждения удаления */}
-      <Dialog
+      <ConfirmDialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            p: 1
-          }
-        }}
-      >
-        <DialogTitle>Удаление напоминания</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Вы действительно хотите удалить напоминание "{reminderToDelete?.title}"?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
-          <Button 
-            onClick={() => setDeleteDialogOpen(false)}
-            variant="outlined"
-            sx={{ borderRadius: 8 }}
-          >
-            Отмена
-          </Button>
-          <Button 
-            onClick={handleDelete} 
-            color="error" 
-            variant="contained"
-            sx={{ borderRadius: 8 }}
-            autoFocus
-          >
-            Удалить
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleDelete}
+        title="Удаление напоминания"
+        message={`Вы действительно хотите удалить напоминание "${reminderToDelete?.title}"?`}
+        confirmText="Удалить"
+        cancelText="Отмена"
+        confirmColor="error"
+      />
 
       {/* Уведомление */}
-      <Snackbar 
+      <Toast 
         open={snackbar.open} 
-        autoHideDuration={4000} 
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
-          elevation={6}
-          variant="filled"
-          sx={{ width: '100%', borderRadius: 3 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        message={snackbar.message}
+        severity={snackbar.severity}
+      />
     </Box>
   );
 };

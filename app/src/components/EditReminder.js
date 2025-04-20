@@ -17,17 +17,40 @@ import {
   Alert,
   Stack,
   CircularProgress,
+  Paper,
+  Divider,
+  Chip,
+  useTheme,
+  alpha,
+  Grow,
+  InputAdornment,
+  Tooltip,
+  Skeleton
 } from '@mui/material';
+import {
+  Cake as CakeIcon,
+  Event as EventIcon,
+  CalendarMonth as CalendarIcon,
+  Description as DescriptionIcon,
+  Notifications as NotificationsIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  Title as TitleIcon,
+  Edit as EditIcon
+} from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { UserContext } from '../App';
 import { getFormattedDateFromReminder } from '../utils/dateUtils';
+import { motion } from 'framer-motion';
+import Toast from './Toast';
 
 const EditReminder = () => {
   const { user } = useContext(UserContext);
   const { id } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   
   // Состояния для формы
   const [title, setTitle] = useState('');
@@ -177,124 +200,206 @@ const EditReminder = () => {
     }
   };
   
-  // Показываем spinner при начальной загрузке
+  // Показываем скелетоны при начальной загрузке
   if (initialLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box>
+        <Typography variant="h5" component="h1" sx={{ mb: 3, fontWeight: 600 }}>
+          <Skeleton width={300} />
+        </Typography>
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 3, 
+            borderRadius: 4,
+            background: alpha(theme.palette.primary.main, 0.04),
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+            mb: 3
+          }}
+        >
+          <Stack spacing={3}>
+            <Skeleton variant="rounded" height={56} />
+            <Skeleton variant="rounded" height={100} />
+            <Skeleton variant="rounded" height={56} />
+            <Skeleton variant="rounded" height={56} />
+            <Skeleton variant="rounded" height={100} />
+            <Skeleton variant="rounded" height={56} />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Skeleton variant="rounded" height={56} width="50%" />
+              <Skeleton variant="rounded" height={56} width="50%" />
+            </Box>
+          </Stack>
+        </Paper>
       </Box>
     );
   }
   
   return (
     <Box>
-      <Typography variant="h5" component="h1" sx={{ mb: 3 }}>
+      <Typography 
+        variant="h5" 
+        component="h1" 
+        sx={{ 
+          mb: 3, 
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}
+      >
+        <EditIcon fontSize="large" color="primary" />
         Изменить напоминание
       </Typography>
       
-      <form onSubmit={handleSubmit}>
-        <Stack spacing={3}>
-          <TextField
-            label="Название события или имя человека"
-            fullWidth
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            error={!!errors.title}
-            helperText={errors.title}
-            disabled={loading}
-            required
-          />
-          
-          <FormControl component="fieldset">
-            <Typography variant="subtitle2" gutterBottom>
-              Тип напоминания
-            </Typography>
-            <RadioGroup
-              row
-              value={type}
-              onChange={handleTypeChange}
-            >
-              <FormControlLabel 
-                value="birthday" 
-                control={<Radio />} 
-                label="День рождения" 
-                disabled={loading}
-              />
-              <FormControlLabel 
-                value="event" 
-                control={<Radio />} 
-                label="Событие/мероприятие" 
-                disabled={loading}
-              />
-            </RadioGroup>
-          </FormControl>
-          
-          {/* Заменяем DatePicker на отдельные поля для дня, месяца и года */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          borderRadius: 4,
+          background: alpha(theme.palette.primary.main, 0.04),
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+          mb: 3
+        }}
+      >
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={3}>
             <TextField
-              label="День"
-              type="number"
+              label="Название события или имя человека"
               fullWidth
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              inputProps={{ min: 1, max: 31 }}
-              error={!!errors.day}
-              helperText={errors.day}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              error={!!errors.title}
+              helperText={errors.title}
               disabled={loading}
               required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <TitleIcon color="primary" />
+                  </InputAdornment>
+                ),
+              }}
             />
             
-            <TextField
-              label="Месяц"
-              type="number"
-              fullWidth
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              inputProps={{ min: 1, max: 12 }}
-              error={!!errors.month}
-              helperText={errors.month}
-              disabled={loading}
-              required
-            />
-          </Box>
-          
-          {/* Показываем поле для года для обычных событий обязательно */}
-          {type === 'event' ? (
-            <TextField
-              label="Год"
-              type="number"
-              fullWidth
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              error={!!errors.year}
-              helperText={errors.year}
-              disabled={loading}
-              required
-            />
-          ) : (
-            /* Для дней рождения показываем опцию добавить год */
-            <Box>
-              <FormControlLabel
-                control={
-                  <Radio 
-                    checked={!includeYear}
-                    onChange={() => setIncludeYear(false)}
-                    disabled={loading}
-                  />
-                }
-                label="Без указания года" 
+            <Box sx={{ 
+              p: 2, 
+              borderRadius: 3,
+              bgcolor: alpha(
+                type === 'birthday' 
+                  ? theme.palette.primary.main 
+                  : theme.palette.secondary.main, 
+                0.08
+              ),
+              border: `1px solid ${alpha(
+                type === 'birthday' 
+                  ? theme.palette.primary.main 
+                  : theme.palette.secondary.main,
+                0.15
+              )}`,
+            }}>
+              <Typography 
+                variant="subtitle1" 
+                gutterBottom 
+                fontWeight={600}
+                sx={{ mb: 2 }}
+              >
+                Тип напоминания
+              </Typography>
+              
+              <RadioGroup
+                row
+                value={type}
+                onChange={handleTypeChange}
+              >
+                <FormControlLabel 
+                  value="birthday" 
+                  control={
+                    <Radio 
+                      sx={{
+                        '&.Mui-checked': {
+                          color: theme.palette.primary.main
+                        }
+                      }}
+                    />
+                  } 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CakeIcon color={type === 'birthday' ? 'primary' : 'inherit'} />
+                      <Typography>День рождения</Typography>
+                    </Box>
+                  }
+                  disabled={loading}
+                  sx={{ mr: 3 }}
+                />
+                <FormControlLabel 
+                  value="event" 
+                  control={
+                    <Radio 
+                      sx={{
+                        '&.Mui-checked': {
+                          color: theme.palette.secondary.main
+                        }
+                      }}
+                    />
+                  } 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <EventIcon color={type === 'event' ? 'secondary' : 'inherit'} />
+                      <Typography>Событие/мероприятие</Typography>
+                    </Box>
+                  }
+                  disabled={loading}
+                />
+              </RadioGroup>
+            </Box>
+            
+            <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
+              Дата
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <TextField
+                label="День"
+                type="number"
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                inputProps={{ min: 1, max: 31 }}
+                error={!!errors.day}
+                helperText={errors.day}
+                disabled={loading}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CalendarIcon fontSize="small" color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ minWidth: 120, flex: 1 }}
               />
-              <FormControlLabel
-                control={
-                  <Radio 
-                    checked={includeYear}
-                    onChange={() => setIncludeYear(true)}
-                    disabled={loading}
-                  />
-                }
-                label="С указанием года" 
+              
+              <TextField
+                label="Месяц"
+                type="number"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                inputProps={{ min: 1, max: 12 }}
+                error={!!errors.month}
+                helperText={errors.month}
+                disabled={loading}
+                required
+                sx={{ minWidth: 120, flex: 1 }}
               />
-              {includeYear && (
+            </Box>
+            
+            {/* Показываем поле для года для обычных событий обязательно */}
+            {type === 'event' ? (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 <TextField
                   label="Год"
                   type="number"
@@ -304,79 +409,133 @@ const EditReminder = () => {
                   error={!!errors.year}
                   helperText={errors.year}
                   disabled={loading}
-                  sx={{ mt: 2 }}
+                  required
                 />
-              )}
+              </motion.div>
+            ) : (
+              /* Для дней рождения показываем опцию добавить год */
+              <Box sx={{ 
+                p: 2, 
+                borderRadius: 3,
+                bgcolor: alpha(theme.palette.primary.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+              }}>
+                <Typography variant="subtitle2" mb={1} fontWeight={500}>
+                  Укажите год рождения (не обязательно)
+                </Typography>
+                <RadioGroup
+                  row
+                  value={includeYear ? "yes" : "no"}
+                  onChange={(e) => setIncludeYear(e.target.value === "yes")}
+                >
+                  <FormControlLabel
+                    value="no"
+                    control={<Radio size="small" />}
+                    label="Без указания года" 
+                  />
+                  <FormControlLabel
+                    value="yes"
+                    control={<Radio size="small" />}
+                    label="С указанием года" 
+                  />
+                </RadioGroup>
+                <Grow in={includeYear}>
+                  <Box sx={{ mt: 2, display: includeYear ? 'block' : 'none' }}>
+                    <TextField
+                      label="Год рождения"
+                      type="number"
+                      fullWidth
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      size="small"
+                    />
+                  </Box>
+                </Grow>
+              </Box>
+            )}
+            
+            <TextField
+              label="Описание (необязательно)"
+              fullWidth
+              multiline
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start" sx={{ mt: 1 }}>
+                    <DescriptionIcon color="primary" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            
+            <FormControl fullWidth>
+              <InputLabel>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <NotificationsIcon fontSize="small" />
+                  Напомнить за
+                </Box>
+              </InputLabel>
+              <Select
+                value={notifyDaysBefore}
+                onChange={(e) => setNotifyDaysBefore(e.target.value)}
+                label="Напомнить за"
+                disabled={loading}
+              >
+                <MenuItem value={0}>В день события</MenuItem>
+                <MenuItem value={1}>За 1 день</MenuItem>
+                <MenuItem value={2}>За 2 дня</MenuItem>
+                <MenuItem value={3}>За 3 дня</MenuItem>
+                <MenuItem value={7}>За неделю</MenuItem>
+                <MenuItem value={14}>За 2 недели</MenuItem>
+                <MenuItem value={30}>За месяц</MenuItem>
+              </Select>
+              <FormHelperText>
+                За сколько дней напомнить о событии
+              </FormHelperText>
+            </FormControl>
+            
+            <Divider />
+            
+            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/')}
+                disabled={loading}
+                fullWidth
+                startIcon={<CancelIcon />}
+                size="large"
+              >
+                Отмена
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={loading}
+                fullWidth
+                startIcon={loading ? null : <SaveIcon />}
+                size="large"
+              >
+                {loading ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  'Сохранить'
+                )}
+              </Button>
             </Box>
-          )}
-          
-          <TextField
-            label="Описание (необязательно)"
-            fullWidth
-            multiline
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={loading}
-          />
-          
-          <FormControl fullWidth>
-            <InputLabel>Напомнить за</InputLabel>
-            <Select
-              value={notifyDaysBefore}
-              onChange={(e) => setNotifyDaysBefore(e.target.value)}
-              label="Напомнить за"
-              disabled={loading}
-            >
-              <MenuItem value={0}>В день события</MenuItem>
-              <MenuItem value={1}>За 1 день</MenuItem>
-              <MenuItem value={2}>За 2 дня</MenuItem>
-              <MenuItem value={3}>За 3 дня</MenuItem>
-              <MenuItem value={7}>За неделю</MenuItem>
-              <MenuItem value={14}>За 2 недели</MenuItem>
-              <MenuItem value={30}>За месяц</MenuItem>
-            </Select>
-            <FormHelperText>
-              За сколько дней напомнить о событии
-            </FormHelperText>
-          </FormControl>
-          
-          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate('/')}
-              disabled={loading}
-              fullWidth
-            >
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading}
-              fullWidth
-            >
-              {loading ? (
-                <CircularProgress size={24} />
-              ) : (
-                'Сохранить'
-              )}
-            </Button>
-          </Box>
-        </Stack>
-      </form>
+          </Stack>
+        </form>
+      </Paper>
       
-      <Snackbar
+      <Toast 
         open={snackbar.open}
-        autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        message={snackbar.message}
+        severity={snackbar.severity}
+      />
     </Box>
   );
 };

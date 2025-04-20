@@ -9,15 +9,13 @@ import {
   InputAdornment,
   Button,
   Tooltip,
-  Alert,
-  Link
+  Alert
 } from '@mui/material';
 import {
   Person as PersonIcon,
   Search as SearchIcon,
   ContactPhone as ContactPhoneIcon,
-  Check as CheckIcon,
-  Error as ErrorIcon
+  Check as CheckIcon
 } from '@mui/icons-material';
 import { searchContacts, requestContactsPermission } from '../api/contacts';
 import debounce from 'lodash/debounce';
@@ -29,25 +27,6 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
   const [inputValue, setInputValue] = useState('');
   const [hasPermission, setHasPermission] = useState(false);
   const [importError, setImportError] = useState('');
-  const [isSupported, setIsSupported] = useState(true);
-  
-  // Проверяем поддержку API при монтировании
-  useEffect(() => {
-    const checkSupport = () => {
-      const supported = 'contacts' in navigator && 
-                       'select' in navigator.contacts && 
-                       window.location.protocol === 'https:';
-      setIsSupported(supported);
-      if (!supported) {
-        setImportError(
-          window.location.protocol !== 'https:' 
-            ? 'Для работы с контактами требуется защищенное соединение (HTTPS)'
-            : 'Ваш браузер не поддерживает работу с контактами'
-        );
-      }
-    };
-    checkSupport();
-  }, []);
   
   // Отложенный поиск
   const debouncedSearch = debounce(async (query) => {
@@ -74,7 +53,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
     };
   }, []);
   
-  // Запрос разрешения и импорт контактов
+  // Запрос контакта через Telegram
   const handleRequestPermission = async () => {
     try {
       setLoading(true);
@@ -88,8 +67,8 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
         }
       }
     } catch (error) {
-      console.error('Ошибка при импорте контактов:', error);
-      setImportError(error.message || 'Ошибка при импорте контактов');
+      console.error('Ошибка при импорте контакта:', error);
+      setImportError(error.message || 'Ошибка при импорте контакта');
       setHasPermission(false);
     } finally {
       setLoading(false);
@@ -160,8 +139,8 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
           noOptionsText="Контакты не найдены"
         />
         
-        {!hasPermission && isSupported && (
-          <Tooltip title="Импортировать контакты телефона">
+        {!hasPermission && (
+          <Tooltip title="Импортировать контакт из Telegram">
             <Button
               variant="outlined"
               onClick={handleRequestPermission}
@@ -174,7 +153,7 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
         )}
         
         {hasPermission && (
-          <Tooltip title="Контакты импортированы">
+          <Tooltip title="Контакт импортирован">
             <CheckIcon color="success" />
           </Tooltip>
         )}
@@ -185,26 +164,14 @@ const ContactSearch = ({ onSelect, error, helperText, label = "Поиск кон
           severity="error" 
           sx={{ mt: 1 }} 
           onClose={() => setImportError('')}
-          icon={<ErrorIcon />}
         >
           {importError}
-          {window.location.protocol !== 'https:' && (
-            <Box mt={1}>
-              <Typography variant="caption">
-                Для работы с контактами откройте приложение по HTTPS:
-                <br />
-                <Link href={`https://${window.location.host}`} target="_blank">
-                  https://{window.location.host}
-                </Link>
-              </Typography>
-            </Box>
-          )}
         </Alert>
       )}
       
-      {!hasPermission && !loading && !importError && isSupported && (
+      {!hasPermission && !loading && !importError && (
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Импортируйте контакты для быстрого поиска
+          Импортируйте контакт для быстрого поиска
         </Typography>
       )}
     </Box>

@@ -20,52 +20,44 @@ const checkContactsSupport = () => {
   }
 };
 
-// Запрос разрешения и импорт контактов
+// Запрос контактов через Telegram Web App
 export const requestContactsPermission = async () => {
   try {
-    // Проверяем поддержку API
-    checkContactsSupport();
+    // Проверяем доступность Telegram Web App
+    if (!window.Telegram?.WebApp) {
+      throw new Error('Telegram Web App не доступен');
+    }
 
-    const props = ['name', 'tel', 'email'];
-    const opts = { multiple: true };
-
-    console.log('Запрашиваем контакты...');
+    console.log('Запрашиваем контакты через Telegram...');
     
     try {
-      // Запрашиваем контакты у пользователя
-      const contacts = await navigator.contacts.select(props, opts);
-      console.log('Получены контакты:', contacts);
+      // Запрашиваем контакты через Telegram
+      const result = await window.Telegram.WebApp.requestContact();
+      console.log('Получен контакт:', result);
 
-      if (!contacts || contacts.length === 0) {
-        console.log('Контакты не выбраны');
+      if (!result) {
+        console.log('Контакт не выбран');
         return false;
       }
 
-      // Проверяем, что у контактов есть нужные поля
-      const validContacts = contacts.filter(contact => 
-        contact.name?.length > 0 && contact.tel?.length > 0
-      );
-
-      if (validContacts.length === 0) {
-        throw new Error('Не найдено контактов с именем и телефоном');
-      }
+      // Формируем контакт
+      const contact = {
+        name: [result.first_name + (result.last_name ? ' ' + result.last_name : '')],
+        tel: [result.phone_number],
+        id: result.phone_number
+      };
 
       // Сохраняем в кэш
-      cachedContacts = validContacts;
+      cachedContacts = [contact];
       
-      // Сохраняем контакты на сервере
-      await axios.post('/api/contacts/sync', { contacts: validContacts });
-      console.log('Контакты успешно сохранены');
+      // Сохраняем контакт на сервере
+      await axios.post('/api/contacts/sync', { contacts: [contact] });
+      console.log('Контакт успешно сохранен');
       
       return true;
     } catch (error) {
-      if (error.name === 'SecurityError') {
-        throw new Error('Доступ к контактам запрещен. Пожалуйста, разрешите доступ в настройках браузера.');
-      }
-      if (error.name === 'InvalidStateError') {
-        throw new Error('Не удалось открыть выбор контактов. Возможно, окно уже открыто.');
-      }
-      throw error;
+      console.error('Ошибка при запросе контакта:', error);
+      throw new Error('Не удалось получить контакт. Пожалуйста, разрешите доступ.');
     }
   } catch (error) {
     console.error('Ошибка при запросе доступа к контактам:', error);
@@ -88,10 +80,9 @@ export const searchContacts = async (query) => {
           )
         )
         .map(contact => ({
-          id: contact.tel[0] || Math.random().toString(),
+          id: contact.id,
           name: contact.name[0],
-          phones: contact.tel,
-          emails: contact.email
+          phones: contact.tel
         }));
     }
     

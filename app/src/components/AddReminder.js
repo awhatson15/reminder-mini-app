@@ -63,6 +63,7 @@ import { motion } from 'framer-motion';
 import Toast from './Toast';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import ContactSearch from './ContactSearch';
 
 const AddReminder = () => {
   const { user } = useContext(UserContext);
@@ -138,6 +139,37 @@ const AddReminder = () => {
     { value: 'monthly', label: 'Ежемесячно' },
     { value: 'yearly', label: 'Ежегодно' }
   ];
+  
+  // Добавляем состояние для выбранного контакта
+  const [selectedContact, setSelectedContact] = useState(null);
+  
+  // Обработчик выбора контакта
+  const handleContactSelect = (contact) => {
+    if (!contact) {
+      setSelectedContact(null);
+      return;
+    }
+    
+    setSelectedContact(contact);
+    
+    // Если у контакта есть день рождения, заполняем поля
+    if (contact.birthday) {
+      const birthday = new Date(contact.birthday);
+      setType('birthday');
+      setDay(birthday.getDate().toString());
+      setMonth((birthday.getMonth() + 1).toString());
+      
+      if (birthday.getFullYear() !== 1) {
+        setYear(birthday.getFullYear().toString());
+        setIncludeYear(true);
+      }
+      
+      // Устанавливаем заголовок, если он пустой
+      if (!title) {
+        setTitle(`День рождения ${contact.name}`);
+      }
+    }
+  };
   
   // Валидация формы
   const validateField = (name, value) => {
@@ -344,6 +376,15 @@ const AddReminder = () => {
       case 0:
         return (
           <>
+            {type === 'birthday' && (
+              <Box mb={2}>
+                <ContactSearch
+                  onSelect={handleContactSelect}
+                  label="Поиск контакта для дня рождения"
+                />
+              </Box>
+            )}
+            
             <TextField
               fullWidth
               label="Название"
@@ -361,7 +402,7 @@ const AddReminder = () => {
                   </InputAdornment>
                 ),
               }}
-              placeholder="Например: День рождения Анны"
+              placeholder={type === 'birthday' ? "Например: День рождения Анны" : "Название события"}
               autoFocus
             />
             

@@ -17,7 +17,8 @@ import {
   Avatar,
   TableHead,
   TableCell,
-  TableRow
+  TableRow,
+  InputAdornment
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
@@ -26,7 +27,8 @@ import {
   Timer as TimerIcon,
   Timeline as TimelineIcon,
   Add as AddIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { UserContext, AppSettingsContext } from '../App';
@@ -40,6 +42,7 @@ import TimelineView from './TimelineView';
 import FocusView from './FocusView';
 import { getEventIcon, getEventIconByGroup } from '../utils/eventUtils';
 import Toast from './Toast';
+import { NeuTextField } from './neumorphic';
 
 // Названия дней недели
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -128,6 +131,7 @@ const CalendarView = () => {
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Загрузка напоминаний
   useEffect(() => {
@@ -491,13 +495,19 @@ const CalendarView = () => {
     );
   };
 
+  // Добавляем функцию для обработки изменения поиска
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    // Здесь можно добавить логику для фильтрации напоминаний
+  };
+
   if (loading) {
     return <Loading />;
   }
   
   return (
     <Box sx={{ width: '100%' }}>
-      {/* Заголовок и переключатель режимов */}
+      {/* Поисковая строка и переключатель режимов */}
       <Box sx={{ 
         display: 'flex',
         flexDirection: 'column',
@@ -505,33 +515,29 @@ const CalendarView = () => {
         mb: isMobile ? 2 : 3,
         mt: isMobile ? 1 : 1.5 
       }}>
-        <Typography 
-          variant="h5" 
-          fontWeight="bold" 
-          sx={{ 
-            mb: 2, 
-            position: 'relative',
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: -8,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 50,
-              height: 3,
-              background: theme => `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-              borderRadius: 4
-            },
-            // Добавляем текстовый градиент
-            background: theme => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            textFillColor: 'transparent',
-          }}
-        >
-          Мои напоминания
-        </Typography>
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <NeuTextField
+            variant="inset"
+            placeholder="Поиск напоминаний"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '20px',
+                paddingLeft: 1,
+                paddingRight: 1
+              }
+            }}
+          />
+        </Box>
         
         <Paper 
           elevation={2}

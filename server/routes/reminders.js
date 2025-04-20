@@ -168,34 +168,40 @@ router.put('/:id', async (req, res) => {
       }
     }
     
-    const updateData = {};
-    if (title) updateData.title = title;
-    if (type) updateData.type = type;
+    // Находим существующее напоминание
+    const existingReminder = await Reminder.findById(req.params.id);
     
-    if (date) {
-      updateData.date = {
-        day: date.day,
-        month: date.month,
-        // Для дней рождения год может быть null
-        year: type === 'birthday' ? (date.year || null) : date.year
-      };
-    }
-    
-    if (description !== undefined) updateData.description = description;
-    if (notifyDaysBefore !== undefined) updateData.notifyDaysBefore = notifyDaysBefore;
-    
-    const reminder = await Reminder.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-    
-    if (!reminder) {
+    if (!existingReminder) {
       return res.status(404).json({ message: 'Напоминание не найдено' });
     }
     
+    // Обновляем поля напоминания
+    if (title) existingReminder.title = title;
+    if (type) existingReminder.type = type;
+    
+    if (date) {
+      existingReminder.date.day = date.day;
+      existingReminder.date.month = date.month;
+      
+      // Для типа birthday год может быть null
+      if (type === 'birthday' && !date.year) {
+        existingReminder.date.year = null;
+      } else if (date.year) {
+        existingReminder.date.year = date.year;
+      }
+    }
+    
+    if (description !== undefined) existingReminder.description = description;
+    if (notifyDaysBefore !== undefined) existingReminder.notifyDaysBefore = notifyDaysBefore;
+    
+    // Обновляем время изменения
+    existingReminder.updatedAt = new Date();
+    
+    // Сохраняем обновленное напоминание
+    await existingReminder.save();
+    
     logger.info(`Обновлено напоминание ${req.params.id}`);
-    res.json(reminder);
+    res.json(existingReminder);
   } catch (error) {
     logger.error(`Ошибка при обновлении напоминания ${req.params.id}:`, error);
     res.status(500).json({ message: 'Ошибка сервера' });

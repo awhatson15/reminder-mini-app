@@ -63,7 +63,6 @@ import { motion } from 'framer-motion';
 import Toast from './Toast';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import ContactSearch from './ContactSearch';
 
 const AddReminder = () => {
   const { user } = useContext(UserContext);
@@ -139,37 +138,6 @@ const AddReminder = () => {
     { value: 'monthly', label: 'Ежемесячно' },
     { value: 'yearly', label: 'Ежегодно' }
   ];
-  
-  // Добавляем состояние для выбранного контакта
-  const [selectedContact, setSelectedContact] = useState(null);
-  
-  // Обработчик выбора контакта
-  const handleContactSelect = (contact) => {
-    if (!contact) {
-      setSelectedContact(null);
-      return;
-    }
-    
-    setSelectedContact(contact);
-    
-    // Если у контакта есть день рождения, заполняем поля
-    if (contact.birthday) {
-      const birthday = new Date(contact.birthday);
-      setType('birthday');
-      setDay(birthday.getDate().toString());
-      setMonth((birthday.getMonth() + 1).toString());
-      
-      if (birthday.getFullYear() !== 1) {
-        setYear(birthday.getFullYear().toString());
-        setIncludeYear(true);
-      }
-      
-      // Устанавливаем заголовок, если он пустой
-      if (!title) {
-        setTitle(`День рождения ${contact.name}`);
-      }
-    }
-  };
   
   // Валидация формы
   const validateField = (name, value) => {
@@ -376,26 +344,6 @@ const AddReminder = () => {
       case 0:
         return (
           <>
-            <Box 
-              sx={{ 
-                mb: 3, 
-                p: 2, 
-                bgcolor: 'background.paper',
-                borderRadius: 1,
-                border: '1px dashed',
-                borderColor: type === 'birthday' ? 'primary.main' : 'divider'
-              }}
-            >
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                🎂 Быстрое создание дня рождения из контактов
-              </Typography>
-              <ContactSearch
-                onSelect={handleContactSelect}
-                label="Поиск в контактах"
-                helperText="Начните вводить имя для поиска"
-              />
-            </Box>
-            
             <TextField
               fullWidth
               label="Название"

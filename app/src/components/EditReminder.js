@@ -72,7 +72,6 @@ import Loading from './Loading';
 import { format, addDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import ConfirmDialog from './ConfirmDialog';
-import ContactSearch from './ContactSearch';
 
 const EditReminder = () => {
   const { user } = useContext(UserContext);
@@ -112,9 +111,6 @@ const EditReminder = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  
-  // Добавляем состояние для выбранного контакта
-  const [selectedContact, setSelectedContact] = useState(null);
   
   // Список месяцев для выбора
   const months = [
@@ -463,34 +459,6 @@ const EditReminder = () => {
     }
   };
   
-  // Обработчик выбора контакта
-  const handleContactSelect = (contact) => {
-    if (!contact) {
-      setSelectedContact(null);
-      return;
-    }
-    
-    setSelectedContact(contact);
-    
-    // Если у контакта есть день рождения, заполняем поля
-    if (contact.birthday) {
-      const birthday = new Date(contact.birthday);
-      setType('birthday');
-      setDay(birthday.getDate().toString());
-      setMonth((birthday.getMonth() + 1).toString());
-      
-      if (birthday.getFullYear() !== 1) {
-        setYear(birthday.getFullYear().toString());
-        setIncludeYear(true);
-      }
-      
-      // Устанавливаем заголовок, если он пустой
-      if (!title) {
-        setTitle(`День рождения ${contact.name}`);
-      }
-    }
-  };
-  
   // Если загружаем данные, показываем индикатор загрузки
   if (fetchingReminder) {
     return <Loading message="Загрузка напоминания..." />;
@@ -520,26 +488,6 @@ const EditReminder = () => {
       case 0:
         return (
           <>
-            <Box 
-              sx={{ 
-                mb: 3, 
-                p: 2, 
-                bgcolor: 'background.paper',
-                borderRadius: 1,
-                border: '1px dashed',
-                borderColor: type === 'birthday' ? 'primary.main' : 'divider'
-              }}
-            >
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                🎂 Быстрое создание дня рождения из контактов
-              </Typography>
-              <ContactSearch
-                onSelect={handleContactSelect}
-                label="Поиск в контактах"
-                helperText="Начните вводить имя для поиска"
-              />
-            </Box>
-            
             <TextField
               fullWidth
               label="Название"

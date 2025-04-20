@@ -527,4 +527,60 @@ export const formatReminderDate = (date) => {
   
   // Более недели
   return formatDate(d);
+};
+
+/**
+ * Форматирует дату в относительном формате для отображения в интерфейсе
+ * @param {Object} date - объект даты из напоминания (с полями day, month, year)
+ * @returns {string} отформатированная строка
+ */
+export const formatRelativeTime = (date) => {
+  if (!date) return '';
+  
+  const { day, month, year } = date;
+  const now = new Date();
+  const eventDate = new Date(
+    year || now.getFullYear(), 
+    month - 1, 
+    day
+  );
+  
+  // Для событий без года (дни рождения) корректируем год
+  if (!year) {
+    // Если дата уже прошла в этом году, устанавливаем следующий год
+    if (
+      eventDate.getMonth() < now.getMonth() ||
+      (eventDate.getMonth() === now.getMonth() && eventDate.getDate() < now.getDate())
+    ) {
+      eventDate.setFullYear(now.getFullYear() + 1);
+    }
+  }
+  
+  // Получаем названия месяцев (в родительном падеже)
+  const monthNames = [
+    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+  ];
+  
+  // Дни недели
+  const weekdays = [
+    'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 
+    'Четверг', 'Пятница', 'Суббота'
+  ];
+  
+  const dayOfWeek = weekdays[eventDate.getDay()];
+  const formattedDate = `${day} ${monthNames[month - 1]}` + (year ? ` ${year}` : '');
+  
+  // Рассчитываем разницу во времени
+  const daysUntil = getDaysUntil(date);
+  
+  if (daysUntil === 0) {
+    return `Сегодня, ${formattedDate} (${dayOfWeek})`;
+  } else if (daysUntil === 1) {
+    return `Завтра, ${formattedDate} (${dayOfWeek})`;
+  } else if (daysUntil < 7) {
+    return `Через ${daysUntil} дн., ${formattedDate} (${dayOfWeek})`;
+  } else {
+    return `${formattedDate} (${dayOfWeek})`;
+  }
 }; 

@@ -9,6 +9,7 @@ import 'dayjs/locale/ru';
 
 // Компоненты
 import ReminderList from './components/ReminderList';
+import CalendarView from './components/CalendarView';
 import AddReminder from './components/AddReminder';
 import EditReminder from './components/EditReminder';
 import Navigation from './components/Navigation';
@@ -148,6 +149,11 @@ const App = () => {
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={
+                  <AnimatedPage>
+                    <CalendarView />
+                  </AnimatedPage>
+                } />
+                <Route path="/list" element={
                   <AnimatedPage>
                     <ReminderList />
                   </AnimatedPage>

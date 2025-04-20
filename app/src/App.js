@@ -140,7 +140,7 @@ const App = () => {
         <Container maxWidth="sm" disableGutters>
           <Box sx={{ 
             padding: '16px', 
-            paddingBottom: '76px',
+            paddingBottom: '16px',
             minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column'

@@ -23,7 +23,7 @@ import {
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
   CalendarToday as CalendarIcon,
-  ViewList as ListIcon,
+  Timer as TimerIcon,
   Timeline as TimelineIcon,
   Add as AddIcon,
   Edit as EditIcon
@@ -37,7 +37,7 @@ import 'dayjs/locale/ru';
 import { getDaysUntil, getMonthName, isToday, isTomorrow, getDayOfWeek, WEEKDAYS_SHORT } from '../utils/dateUtils';
 import Loading from './Loading';
 import TimelineView from './TimelineView';
-import ListView from './ListView';
+import FocusView from './FocusView';
 import { getEventIcon, getEventIconByGroup } from '../utils/eventUtils';
 import Toast from './Toast';
 
@@ -75,7 +75,7 @@ const CalendarView = () => {
   const [currentDate, setCurrentDate] = useState(dayjs()); // текущая отображаемая дата
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('calendar'); // calendar, list, timeline
+  const [viewMode, setViewMode] = useState('calendar'); // calendar, focus, timeline
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
@@ -284,12 +284,12 @@ const CalendarView = () => {
               }} 
             />
             <Tab 
-              value="list" 
-              icon={<ListIcon fontSize="small" />}
-              label="Список" 
+              value="focus" 
+              icon={<TimerIcon fontSize="small" />}
+              label="Фокус" 
               sx={{ 
                 minHeight: '46px',
-                fontWeight: viewMode === 'list' ? 'medium' : 'normal',
+                fontWeight: viewMode === 'focus' ? 'medium' : 'normal',
                 textTransform: 'none',
                 fontSize: 15
               }} 
@@ -593,9 +593,9 @@ const CalendarView = () => {
         </motion.div>
       )}
 
-      {/* Режим Список */}
-      {viewMode === 'list' && (
-        <ListView reminders={reminders} />
+      {/* Режим Фокус */}
+      {viewMode === 'focus' && (
+        <FocusView reminders={reminders} />
       )}
 
       {/* Режим Timeline */}

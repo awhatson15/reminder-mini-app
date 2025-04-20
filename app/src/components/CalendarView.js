@@ -265,14 +265,15 @@ const CalendarView = () => {
   };
 
   const renderDate = (day, row, col) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    if (!day) return null;
     
-    const isToday = day && day.toDateString() === today.toDateString();
-    const isCurrentMonth = day && day.getMonth() === currentDate.getMonth();
+    const isCurrentDay = isToday(day);
+    const isCurrentMonth = day.getMonth() === currentDate.month();
     
-    const hasReminders = day && remindersByDate[day.toISOString().split('T')[0]];
-    const remindersCount = hasReminders ? hasReminders.length : 0;
+    // Создаем ключ для поиска в remindersByDate
+    const dateKey = `${day.getDate()}-${day.getMonth() + 1}`;
+    const dateEvents = remindersByDate[dateKey] || [];
+    const remindersCount = dateEvents.length;
     
     return (
       <Box 
@@ -285,12 +286,12 @@ const CalendarView = () => {
           width: '100%',
           height: '100%',
           position: 'relative',
-          cursor: day ? 'pointer' : 'default',
+          cursor: 'pointer',
           borderRadius: '14px',
-          border: theme => isToday 
+          border: theme => isCurrentDay 
             ? `2px solid ${theme.palette.primary.main}` 
             : `1px solid ${alpha(theme.palette.divider, isCurrentMonth ? 0.08 : 0.02)}`,
-          backgroundColor: theme => isToday
+          backgroundColor: theme => isCurrentDay
             ? alpha(theme.palette.primary.main, 0.08)
             : isCurrentMonth
               ? alpha(theme.palette.background.paper, 0.5)
@@ -301,7 +302,7 @@ const CalendarView = () => {
           alignItems: 'center',
           padding: '6px 2px',
           opacity: isCurrentMonth ? 1 : 0.4,
-          boxShadow: theme => isToday 
+          boxShadow: theme => isCurrentDay 
             ? `0 0 10px ${alpha(theme.palette.primary.main, 0.2)}` 
             : 'none',
           overflow: 'hidden',
@@ -309,70 +310,60 @@ const CalendarView = () => {
             duration: theme.transitions.duration.shorter,
           }),
         }}
-        onClick={() => day && handleDateClick(day)}
+        onClick={() => handleDateClick(dayjs(day))}
       >
-        {day && (
-          <>
-            <Typography
-              variant="body2"
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: isCurrentDay ? 'bold' : isCurrentMonth ? 'medium' : 'normal',
+            color: theme => isCurrentDay 
+              ? theme.palette.primary.main 
+              : isCurrentMonth 
+                ? theme.palette.text.primary 
+                : theme.palette.text.secondary,
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {day.getDate()}
+        </Typography>
+        
+        {remindersCount > 0 && (
+          <Box 
+            component={motion.div}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            sx={{ 
+              mt: 'auto', 
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5
+            }}
+          >
+            <Chip
+              size="small"
+              label={remindersCount}
+              color="primary"
               sx={{
-                fontWeight: isToday ? 'bold' : isCurrentMonth ? 'medium' : 'normal',
-                color: theme => isToday 
-                  ? theme.palette.primary.main 
-                  : isCurrentMonth 
-                    ? theme.palette.text.primary 
-                    : theme.palette.text.secondary,
-                position: 'relative',
-                zIndex: 1,
+                height: '20px',
+                minWidth: '20px',
+                borderRadius: '10px',
+                '& .MuiChip-label': {
+                  px: 1,
+                  fontSize: '0.7rem',
+                  fontWeight: 'bold',
+                }
               }}
-            >
-              {day.getDate()}
-            </Typography>
-            
-            {remindersCount > 0 && (
-              <Box 
-                component={motion.div}
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                sx={{ 
-                  mt: 'auto', 
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 0.5
-                }}
-              >
-                {remindersCount > 0 && (
-                  <Chip
-                    size="small"
-                    label={remindersCount}
-                    color="primary"
-                    sx={{
-                      height: '20px',
-                      minWidth: '20px',
-                      borderRadius: '10px',
-                      '& .MuiChip-label': {
-                        px: 1,
-                        fontSize: '0.7rem',
-                        fontWeight: 'bold',
-                      }
-                    }}
-                  />
-                )}
-              </Box>
-            )}
-          </>
+            />
+          </Box>
         )}
       </Box>
     );
   };
 
   const renderCalendar = () => {
-    const days = [];
     const dates = generateCalendarDates(currentDate);
-    
-    // Дни недели
-    const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
     
     return (
       <motion.div 
@@ -414,7 +405,7 @@ const CalendarView = () => {
               component={motion.h6}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              key={`${currentDate.getMonth()}-${currentDate.getFullYear()}`}
+              key={`${currentDate.month()}-${currentDate.year()}`}
               transition={{ duration: 0.3 }}
               fontWeight="medium"
               sx={{
@@ -434,7 +425,7 @@ const CalendarView = () => {
                 }
               }}
             >
-              {new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(currentDate)}
+              {new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(currentDate.toDate())}
             </Typography>
             
             <IconButton 
@@ -455,7 +446,7 @@ const CalendarView = () => {
           
           {/* Дни недели */}
           <Grid container spacing={1} columns={7} sx={{ mb: 1 }}>
-            {weekDays.map((day, index) => (
+            {WEEKDAYS.map((day, index) => (
               <Grid item xs={1} key={index}>
                 <Typography 
                   variant="caption" 

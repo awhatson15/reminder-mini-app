@@ -3,12 +3,13 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Box, Container, ThemeProvider } from '@mui/material';
+import { Box, Container, ThemeProvider, Alert, Button } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import 'dayjs/locale/ru';
 
 // Импорт темы и контекста
 import createNeumorphicTheme from './theme';
+import { connectionMonitor } from './utils/api';
 
 // Компоненты
 import CalendarView from './components/CalendarView';
@@ -58,9 +59,11 @@ const AnimatedPage = ({ children }) => {
   );
 };
 
-const App = () => {
+const App = ({ telegramInitialized = false, isOnline = true }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [networkStatus, setNetworkStatus] = useState(isOnline);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -71,11 +74,12 @@ const App = () => {
     const initApp = async () => {
       try {
         setLoading(true);
+        setError(null);
         
         // Получаем данные пользователя из Telegram WebApp
         const initData = window.Telegram?.WebApp?.initData || '';
         
-        if (!initData) {
+        if (!initData && !telegramInitialized) {
           console.warn('Не удалось получить initData, используем тестовые данные');
           
           // Для разработки или прямого доступа - используем тестовые данные
@@ -94,7 +98,7 @@ const App = () => {
         const userStr = new URLSearchParams(initData).get('user');
         const userData = userStr ? JSON.parse(userStr) : null;
         
-        if (!userData) {
+        if (!userData && !telegramInitialized) {
           console.error('Не удалось получить данные пользователя');
           // Для прямого доступа через браузер - также используем тестовые данные  
           setUser({
@@ -108,18 +112,34 @@ const App = () => {
           return;
         }
         
-        // Сохраняем или обновляем пользователя в базе данных
-        const response = await axios.post('/api/users', {
-          telegramId: userData.id,
-          username: userData.username,
-          firstName: userData.first_name,
-          lastName: userData.last_name
-        });
+        try {
+          // Сохраняем или обновляем пользователя в базе данных
+          const response = await axios.post('/api/users', {
+            telegramId: userData?.id || 12345678,
+            username: userData?.username || 'test_user',
+            firstName: userData?.first_name || 'Test',
+            lastName: userData?.last_name || 'User'
+          });
+          
+          setUser(response.data);
+        } catch (apiError) {
+          console.error('Ошибка при запросе к API:', apiError);
+          setError('Ошибка подключения к серверу. Пожалуйста, проверьте соединение.');
+          
+          // Используем заглушку пользователя даже при ошибке API
+          setUser({
+            _id: 'dev_user_id',
+            telegramId: userData?.id || 12345678,
+            username: userData?.username || 'test_user',
+            firstName: userData?.first_name || 'Test',
+            lastName: userData?.last_name || 'User'
+          });
+        }
         
-        setUser(response.data);
         setLoading(false);
       } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
+        setError('Произошла ошибка при запуске приложения');
         setLoading(false);
         
         // Для разработки - временный пользователь
@@ -134,7 +154,47 @@ const App = () => {
     };
     
     initApp();
-  }, []);
+  }, [telegramInitialized]);
+  
+  useEffect(() => {
+    let monitor = null;
+    
+    // Если есть ошибка, запускаем мониторинг соединения
+    if (error) {
+      monitor = connectionMonitor(() => {
+        // При восстановлении соединения перезагружаем страницу
+        window.location.reload();
+      }, 5000);
+    }
+    
+    // Очищаем при размонтировании
+    return () => {
+      if (monitor) {
+        monitor.stop();
+      }
+    };
+  }, [error]);
+  
+  // Обновляем объявление компонента App для принятия isOnline
+  useEffect(() => {
+    setNetworkStatus(isOnline);
+    
+    // Обработчики изменения сетевого соединения
+    window.appState.onOnline = () => {
+      setNetworkStatus(true);
+      setError(null);
+    };
+    
+    window.appState.onOffline = () => {
+      setNetworkStatus(false);
+      setError('Отсутствует подключение к интернету. Работаем в автономном режиме.');
+    };
+    
+    return () => {
+      window.appState.onOnline = null;
+      window.appState.onOffline = null;
+    };
+  }, [isOnline]);
   
   if (loading) {
     return <Loading />;
@@ -148,6 +208,13 @@ const App = () => {
     paddingBottom: '70px', // Место под навигацию
     paddingTop: '10px',
     transition: 'background 0.5s ease',
+  };
+  
+  // Обработчик повторного соединения
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    window.location.reload();
   };
   
   // Пользователь всегда должен быть определен (либо реальный, либо тестовый)
@@ -170,6 +237,21 @@ const App = () => {
                 flexDirection: 'column'
               }}>
                 <StatusBar />
+                
+                {error && (
+                  <Alert 
+                    severity="error" 
+                    sx={{ mb: 2 }}
+                    action={
+                      <Button color="inherit" size="small" onClick={handleRetry}>
+                        Повторить
+                      </Button>
+                    }
+                  >
+                    {error}
+                  </Alert>
+                )}
+                
                 <AnimatePresence mode="wait">
                   <Routes location={location} key={location.pathname}>
                     <Route path="/" element={

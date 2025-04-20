@@ -111,6 +111,11 @@ if (NODE_ENV === 'production') {
 app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/users', require('./routes/users'));
 
+// Health check эндпоинт для проверки работоспособности API
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Перенаправление всех остальных запросов на React-приложение
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../app/build', 'index.html'));

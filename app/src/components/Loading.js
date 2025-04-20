@@ -1,19 +1,33 @@
 import React from 'react';
-import { Box, CircularProgress, Typography, styled } from '@mui/material';
+import { Box, CircularProgress, Typography, styled, Paper } from '@mui/material';
 import { motion } from 'framer-motion';
-import { NeuCard } from './neumorphic';
+import { alpha } from '@mui/material/styles';
 
-// Стилизованный компонент загрузки в неоморфном стиле
+// Стилизованный контейнер загрузки
 const LoadingContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   minHeight: '100vh',
-  background: theme.palette.background.default,
+  width: '100%',
+  background: theme.palette.background?.default || '#f5f5f5',
+  padding: '16px',
 }));
 
-// Анимация логотипа
+// Стилизованная карточка для загрузки
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: 16,
+  borderRadius: 24,
+  boxShadow: theme.palette.neumorphic?.boxShadow || '5px 5px 10px rgba(0, 0, 0, 0.1), -5px -5px 10px rgba(255, 255, 255, 0.8)',
+  backgroundColor: theme.palette.background?.paper || '#ededed',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+}));
+
+// Анимации
 const logoVariants = {
   initial: { scale: 0.8, opacity: 0 },
   animate: { 
@@ -48,25 +62,28 @@ const progressVariants = {
 const Loading = () => {
   return (
     <LoadingContainer>
-      <NeuCard
+      <Box 
         component={motion.div}
         initial="initial"
         animate="animate"
         variants={logoVariants}
-        sx={{ p: 4, mb: 3 }}
+        sx={{ mb: 4, width: '100%', maxWidth: '320px' }}
       >
-        <Typography 
-          variant="h4" 
-          component="div" 
-          sx={{ 
-            fontWeight: 600, 
-            color: 'primary.main',
-            textAlign: 'center'
-          }}
-        >
-          Reminder
-        </Typography>
-      </NeuCard>
+        <StyledPaper>
+          <Typography 
+            variant="h4" 
+            component="div" 
+            sx={{ 
+              fontWeight: 600, 
+              color: 'primary.main',
+              textAlign: 'center',
+              py: 1
+            }}
+          >
+            Напоминатель
+          </Typography>
+        </StyledPaper>
+      </Box>
       
       <Box 
         component={motion.div}

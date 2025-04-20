@@ -467,4 +467,62 @@ export const notificationsApi = {
    * @returns {Promise<any>} - Результат запроса
    */
   markAllAsRead: (options) => patch('/notifications/read-all', null, options)
+};
+
+/**
+ * Проверяет соединение с API сервером
+ * @returns {Promise<boolean>} true, если соединение установлено успешно
+ */
+export const checkApiConnection = async () => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      method: 'GET',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Ошибка проверки соединения с API:', error);
+    return false;
+  }
+};
+
+/**
+ * Обработчик ошибок соединения с сервером
+ * @param {Function} callback - Функция обратного вызова, которая будет вызвана при восстановлении соединения
+ * @param {number} interval - Интервал попыток в миллисекундах
+ * @returns {Object} - Объект с методом stop для остановки проверки соединения
+ */
+export const connectionMonitor = (callback, interval = 5000) => {
+  let isRunning = true;
+  let timeoutId = null;
+  
+  const check = async () => {
+    if (!isRunning) return;
+    
+    const isConnected = await checkApiConnection();
+    
+    if (isConnected && typeof callback === 'function') {
+      callback();
+    } else {
+      timeoutId = setTimeout(check, interval);
+    }
+  };
+  
+  // Запускаем первую проверку
+  check();
+  
+  return {
+    stop: () => {
+      isRunning = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+  };
 }; 

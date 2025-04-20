@@ -82,14 +82,22 @@ const CalendarView = () => {
     const fetchReminders = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`/api/reminders?telegramId=${user.telegramId}`);
+        const response = await axios.get(`/api/reminders?telegramId=${user.telegramId}`)
+          .catch(error => {
+            console.error('Ошибка при загрузке напоминаний:', error);
+            // В случае ошибки API, используем пустой массив
+            throw error;
+          });
+        
         setReminders(response.data);
         setLoading(false);
       } catch (error) {
-        console.error('Ошибка при загрузке напоминаний:', error);
+        console.error('Не удалось загрузить напоминания:', error);
+        // В случае ошибки используем пустой массив
+        setReminders([]);
         setToast({
           open: true,
-          message: 'Ошибка при загрузке напоминаний',
+          message: 'Не удалось загрузить напоминания. Проверьте подключение к сети.',
           severity: 'error'
         });
         setLoading(false);

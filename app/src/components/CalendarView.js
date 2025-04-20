@@ -132,6 +132,8 @@ const CalendarView = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   
   // Загрузка напоминаний
   useEffect(() => {
@@ -495,10 +497,163 @@ const CalendarView = () => {
     );
   };
 
-  // Добавляем функцию для обработки изменения поиска
+  // Обновляем функцию обработки изменения поиска
   const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-    // Здесь можно добавить логику для фильтрации напоминаний
+    const value = event.target.value;
+    setSearchTerm(value);
+    
+    if (value.trim() === '') {
+      setIsSearching(false);
+      setSearchResults([]);
+      return;
+    }
+    
+    // Устанавливаем флаг поиска
+    setIsSearching(true);
+    
+    // Фильтруем напоминания на основе поискового запроса
+    const filteredResults = reminders.filter(reminder => {
+      const searchLower = value.toLowerCase();
+      return (
+        (reminder.title && reminder.title.toLowerCase().includes(searchLower)) || 
+        (reminder.description && reminder.description.toLowerCase().includes(searchLower))
+      );
+    });
+    
+    setSearchResults(filteredResults);
+  };
+
+  // Создаем компонент для отображения результатов поиска
+  const renderSearchResults = () => {
+    if (!isSearching) {
+      return null;
+    }
+
+    if (searchResults.length === 0) {
+      return (
+        <Paper
+          sx={{
+            p: 3,
+            mt: 2,
+            mb: 2,
+            borderRadius: '14px',
+            textAlign: 'center',
+            boxShadow: theme => theme.palette.neumorphic.boxShadow,
+          }}
+        >
+          <Typography variant="body1" color="text.secondary">
+            По запросу "{searchTerm}" ничего не найдено
+          </Typography>
+        </Paper>
+      );
+    }
+
+    return (
+      <Box sx={{ mt: 2, mb: 3 }}>
+        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
+          Результаты поиска ({searchResults.length})
+        </Typography>
+        
+        <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
+          {searchResults.map((reminder) => {
+            const eventIcon = reminder.type === 'birthday' 
+              ? getEventIcon('birthday') 
+              : getEventIconByGroup(reminder.group);
+            
+            const eventColor = reminder.type === 'birthday'
+              ? CATEGORY_COLORS.birthday
+              : CATEGORY_COLORS[reminder.group];
+              
+            // Преобразуем дату для отображения
+            const reminderDate = reminder.date ? 
+              (reminder.date.day && reminder.date.month) ?
+                new Date(reminder.date.year || new Date().getFullYear(), reminder.date.month - 1, reminder.date.day) :
+                new Date(reminder.date) :
+              null;
+              
+            const dateStr = reminderDate ? 
+                isToday(reminderDate) ? 'Сегодня' :
+                isTomorrow(reminderDate) ? 'Завтра' :
+                dayjs(reminderDate).format('D MMMM YYYY') : '';
+                
+            return (
+              <Paper
+                key={reminder._id}
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  p: isMobile ? 1.5 : 2,
+                  mb: 2,
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: theme => theme.palette.neumorphic.boxShadowElevated,
+                  }
+                }}
+                onClick={() => navigate(`/edit/${reminder._id}`)}
+              >
+                <Avatar 
+                  sx={{ 
+                    width: 40, 
+                    height: 40, 
+                    bgcolor: alpha(eventColor, 0.15),
+                    color: eventColor,
+                    mr: 2
+                  }}
+                >
+                  {eventIcon}
+                </Avatar>
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body1" fontWeight="medium">
+                    {reminder.title}
+                  </Typography>
+                  {reminder.description && (
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary"
+                      sx={{ mt: 0.3 }}
+                    >
+                      {reminder.description.length > 60
+                        ? `${reminder.description.substring(0, 60)}...` 
+                        : reminder.description}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: 'flex', mt: 0.5, alignItems: 'center' }}>
+                    <Box
+                      component={CalendarIcon}
+                      sx={{ 
+                        fontSize: '0.9rem',
+                        mr: 0.5,
+                        color: 'text.secondary',
+                        opacity: 0.7
+                      }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      {dateStr}
+                    </Typography>
+                  </Box>
+                </Box>
+                <IconButton 
+                  size="small"
+                  color="primary"
+                  sx={{
+                    ml: 1,
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.15)
+                    }
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Paper>
+            );
+          })}
+        </Box>
+      </Box>
+    );
   };
 
   if (loading) {
@@ -631,171 +786,178 @@ const CalendarView = () => {
         </Paper>
       </Box>
 
-      {/* Режим Календарь */}
-      {viewMode === 'calendar' && (
-        <motion.div
-          variants={calendarVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-        >
-          {renderCalendar()}
+      {/* Отображение результатов поиска */}
+      {isSearching ? (
+        renderSearchResults()
+      ) : (
+        <>
+          {/* Режим Календарь */}
+          {viewMode === 'calendar' && (
+            <motion.div
+              variants={calendarVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              {renderCalendar()}
 
-          {/* Список событий на выбранную дату */}
-          <Fade in={selectedDate !== null}>
-            <Box sx={{ mt: 2 }}>
-              {selectedDate && (
-                <>
-                  <Paper
-                    sx={{
-                      p: isMobile ? 1.5 : 2,
-                      mb: isMobile ? 1.5 : 2,
-                      borderLeft: `4px solid ${theme.palette.primary.main}`,
-                      borderRadius: '4px',
-                    }}
-                  >
-                    <Typography variant="subtitle1" fontWeight="medium">
-                      {selectedDate.format('D MMMM YYYY')}
-                      {isToday(selectedDate.toDate()) && (
-                        <Chip 
-                          label="Сегодня" 
-                          size="small" 
-                          color="primary" 
-                          sx={{ ml: 1, height: '20px' }} 
-                        />
-                      )}
-                      {isTomorrow(selectedDate.toDate()) && (
-                        <Chip 
-                          label="Завтра" 
-                          size="small" 
-                          color="secondary" 
-                          sx={{ ml: 1, height: '20px' }} 
-                        />
-                      )}
-                    </Typography>
-                    
-                    <Divider sx={{ my: 1 }} />
-                    
-                    {selectedDateEvents.length === 0 ? (
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        flexDirection: 'column',
-                        py: isMobile ? 2 : 3
-                      }}>
-                        <Typography variant="body2" color="text.secondary" mb={1.5}>
-                          На эту дату нет событий
+              {/* Список событий на выбранную дату */}
+              <Fade in={selectedDate !== null}>
+                <Box sx={{ mt: 2 }}>
+                  {selectedDate && (
+                    <>
+                      <Paper
+                        sx={{
+                          p: isMobile ? 1.5 : 2,
+                          mb: isMobile ? 1.5 : 2,
+                          borderLeft: `4px solid ${theme.palette.primary.main}`,
+                          borderRadius: '4px',
+                        }}
+                      >
+                        <Typography variant="subtitle1" fontWeight="medium">
+                          {selectedDate.format('D MMMM YYYY')}
+                          {isToday(selectedDate.toDate()) && (
+                            <Chip 
+                              label="Сегодня" 
+                              size="small" 
+                              color="primary" 
+                              sx={{ ml: 1, height: '20px' }} 
+                            />
+                          )}
+                          {isTomorrow(selectedDate.toDate()) && (
+                            <Chip 
+                              label="Завтра" 
+                              size="small" 
+                              color="secondary" 
+                              sx={{ ml: 1, height: '20px' }} 
+                            />
+                          )}
                         </Typography>
-                        <Button 
-                          variant="contained" 
-                          startIcon={<AddIcon />}
-                          size="medium"
-                          sx={{
-                            borderRadius: '12px',
-                            py: 0.8,
-                            px: 2.5,
-                            textTransform: 'none',
-                            fontWeight: 'medium'
-                          }}
-                          onClick={() => handleLongPress(selectedDate)}
-                        >
-                          Добавить событие
-                        </Button>
-                      </Box>
-                    ) : (
-                      selectedDateEvents.map((event) => {
-                        const eventIcon = event.type === 'birthday' 
-                          ? getEventIcon('birthday') 
-                          : getEventIconByGroup(event.group);
                         
-                        const eventColor = event.type === 'birthday'
-                          ? CATEGORY_COLORS.birthday
-                          : CATEGORY_COLORS[event.group];
-                            
-                        return (
-                          <Box 
-                            key={event._id}
-                            sx={{ 
-                              display: 'flex',
-                              alignItems: 'center',
-                              mb: isMobile ? 1 : 1.5,
-                              p: isMobile ? 1 : 1.5,
-                              borderRadius: '10px',
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                bgcolor: alpha(theme.palette.action.hover, 0.15),
-                                transform: 'translateY(-2px)'
-                              }
-                            }}
-                            onClick={() => navigate(`/edit/${event._id}`)}
-                          >
-                            <Avatar 
-                              sx={{ 
-                                width: isMobile ? 36 : 42, 
-                                height: isMobile ? 36 : 42, 
-                                bgcolor: alpha(eventColor, 0.15),
-                                color: eventColor,
-                                mr: isMobile ? 1.5 : 2
+                        <Divider sx={{ my: 1 }} />
+                        
+                        {selectedDateEvents.length === 0 ? (
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            flexDirection: 'column',
+                            py: isMobile ? 2 : 3
+                          }}>
+                            <Typography variant="body2" color="text.secondary" mb={1.5}>
+                              На эту дату нет событий
+                            </Typography>
+                            <Button 
+                              variant="contained" 
+                              startIcon={<AddIcon />}
+                              size="medium"
+                              sx={{
+                                borderRadius: '12px',
+                                py: 0.8,
+                                px: 2.5,
+                                textTransform: 'none',
+                                fontWeight: 'medium'
                               }}
+                              onClick={() => handleLongPress(selectedDate)}
                             >
-                              {eventIcon}
-                            </Avatar>
-                            <Box sx={{ flexGrow: 1 }}>
-                              <Typography variant="body1" fontWeight="medium" fontSize={isMobile ? '0.95rem' : '1rem'}>
-                                {event.title}
-                              </Typography>
-                              {event.description && (
-                                <Typography 
-                                  variant="body2" 
-                                  color="text.secondary"
+                              Добавить событие
+                            </Button>
+                          </Box>
+                        ) : (
+                          selectedDateEvents.map((event) => {
+                            const eventIcon = event.type === 'birthday' 
+                              ? getEventIcon('birthday') 
+                              : getEventIconByGroup(event.group);
+                            
+                            const eventColor = event.type === 'birthday'
+                              ? CATEGORY_COLORS.birthday
+                              : CATEGORY_COLORS[event.group];
+                              
+                            return (
+                              <Box 
+                                key={event._id}
+                                sx={{ 
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: isMobile ? 1 : 1.5,
+                                  p: isMobile ? 1 : 1.5,
+                                  borderRadius: '10px',
+                                  transition: 'all 0.2s',
+                                  '&:hover': {
+                                    bgcolor: alpha(theme.palette.action.hover, 0.15),
+                                    transform: 'translateY(-2px)'
+                                  }
+                                }}
+                                onClick={() => navigate(`/edit/${event._id}`)}
+                              >
+                                <Avatar 
                                   sx={{ 
-                                    mt: 0.3,
-                                    fontSize: isMobile ? '0.8rem' : '0.875rem'
+                                    width: isMobile ? 36 : 42, 
+                                    height: isMobile ? 36 : 42, 
+                                    bgcolor: alpha(eventColor, 0.15),
+                                    color: eventColor,
+                                    mr: isMobile ? 1.5 : 2
                                   }}
                                 >
-                                  {event.description.length > (isMobile ? 40 : 50)
-                                    ? `${event.description.substring(0, isMobile ? 40 : 50)}...` 
-                                    : event.description}
-                                </Typography>
-                              )}
-                            </Box>
-                            <IconButton 
-                              size={isMobile ? "small" : "medium"}
-                              color="primary"
-                              sx={{
-                                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                '&:hover': {
-                                  bgcolor: alpha(theme.palette.primary.main, 0.15)
-                                }
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/edit/${event._id}`);
-                              }}
-                            >
-                              <EditIcon fontSize={isMobile ? "small" : "small"} />
-                            </IconButton>
-                          </Box>
-                        );
-                      })
-                    )}
-                  </Paper>
-                </>
-              )}
-            </Box>
-          </Fade>
-        </motion.div>
-      )}
+                                  {eventIcon}
+                                </Avatar>
+                                <Box sx={{ flexGrow: 1 }}>
+                                  <Typography variant="body1" fontWeight="medium" fontSize={isMobile ? '0.95rem' : '1rem'}>
+                                    {event.title}
+                                  </Typography>
+                                  {event.description && (
+                                    <Typography 
+                                      variant="body2" 
+                                      color="text.secondary"
+                                      sx={{ 
+                                        mt: 0.3,
+                                        fontSize: isMobile ? '0.8rem' : '0.875rem'
+                                      }}
+                                    >
+                                      {event.description.length > (isMobile ? 40 : 50)
+                                        ? `${event.description.substring(0, isMobile ? 40 : 50)}...` 
+                                        : event.description}
+                                    </Typography>
+                                  )}
+                                </Box>
+                                <IconButton 
+                                  size={isMobile ? "small" : "medium"}
+                                  color="primary"
+                                  sx={{
+                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                    '&:hover': {
+                                      bgcolor: alpha(theme.palette.primary.main, 0.15)
+                                    }
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/edit/${event._id}`);
+                                  }}
+                                >
+                                  <EditIcon fontSize={isMobile ? "small" : "small"} />
+                                </IconButton>
+                              </Box>
+                            );
+                          })
+                        )}
+                      </Paper>
+                    </>
+                  )}
+                </Box>
+              </Fade>
+            </motion.div>
+          )}
 
-      {/* Режим Фокус */}
-      {viewMode === 'focus' && (
-        <FocusView reminders={reminders} />
-      )}
+          {/* Режим Фокус */}
+          {viewMode === 'focus' && (
+            <FocusView reminders={reminders} />
+          )}
 
-      {/* Режим Timeline */}
-      {viewMode === 'timeline' && (
-        <TimelineView reminders={reminders} />
+          {/* Режим Timeline */}
+          {viewMode === 'timeline' && (
+            <TimelineView reminders={reminders} />
+          )}
+        </>
       )}
 
       {/* Тост для уведомлений */}

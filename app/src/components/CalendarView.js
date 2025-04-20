@@ -217,6 +217,242 @@ const CalendarView = () => {
     return (remindersByDate[dateKey] || []).length;
   };
 
+  const renderDate = (day, row, col) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const isToday = day && day.toDateString() === today.toDateString();
+    const isCurrentMonth = day && day.getMonth() === currentDate.getMonth();
+    
+    const hasReminders = day && remindersByDate[day.toISOString().split('T')[0]];
+    const remindersCount = hasReminders ? hasReminders.length : 0;
+    
+    return (
+      <Box 
+        component={motion.div}
+        key={`${row}-${col}`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+        sx={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          cursor: day ? 'pointer' : 'default',
+          borderRadius: '14px',
+          border: theme => isToday 
+            ? `2px solid ${theme.palette.primary.main}` 
+            : `1px solid ${alpha(theme.palette.divider, isCurrentMonth ? 0.08 : 0.02)}`,
+          backgroundColor: theme => isToday
+            ? alpha(theme.palette.primary.main, 0.08)
+            : isCurrentMonth
+              ? alpha(theme.palette.background.paper, 0.5)
+              : alpha(theme.palette.background.default, 0.3),
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '6px 2px',
+          opacity: isCurrentMonth ? 1 : 0.4,
+          boxShadow: theme => isToday 
+            ? `0 0 10px ${alpha(theme.palette.primary.main, 0.2)}` 
+            : 'none',
+          overflow: 'hidden',
+          transition: theme => theme.transitions.create(['background-color', 'transform', 'box-shadow'], {
+            duration: theme.transitions.duration.shorter,
+          }),
+        }}
+        onClick={() => day && handleDateClick(day)}
+      >
+        {day && (
+          <>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: isToday ? 'bold' : isCurrentMonth ? 'medium' : 'normal',
+                color: theme => isToday 
+                  ? theme.palette.primary.main 
+                  : isCurrentMonth 
+                    ? theme.palette.text.primary 
+                    : theme.palette.text.secondary,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              {day.getDate()}
+            </Typography>
+            
+            {remindersCount > 0 && (
+              <Box 
+                component={motion.div}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                sx={{ 
+                  mt: 'auto', 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 0.5
+                }}
+              >
+                {remindersCount > 0 && (
+                  <Chip
+                    size="small"
+                    label={remindersCount}
+                    color="primary"
+                    sx={{
+                      height: '20px',
+                      minWidth: '20px',
+                      borderRadius: '10px',
+                      '& .MuiChip-label': {
+                        px: 1,
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                      }
+                    }}
+                  />
+                )}
+              </Box>
+            )}
+          </>
+        )}
+      </Box>
+    );
+  };
+
+  const renderCalendar = () => {
+    const days = [];
+    const dates = generateCalendarDates(currentDate);
+    
+    // Дни недели
+    const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        style={{ width: '100%' }}
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          mb: 2
+        }}>
+          {/* Навигация по месяцам */}
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            px: isMobile ? 1 : 2
+          }}>
+            <IconButton 
+              onClick={handlePrevMonth}
+              component={motion.button}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              sx={{
+                bgcolor: theme => alpha(theme.palette.primary.main, 0.1),
+                '&:hover': {
+                  bgcolor: theme => alpha(theme.palette.primary.main, 0.2),
+                },
+              }}
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+            
+            <Typography 
+              variant="h6" 
+              component={motion.h6}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              key={`${currentDate.getMonth()}-${currentDate.getFullYear()}`}
+              transition={{ duration: 0.3 }}
+              fontWeight="medium"
+              sx={{
+                textAlign: 'center',
+                letterSpacing: 0.5,
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: -4,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 30,
+                  height: 2,
+                  background: theme => theme.palette.primary.main,
+                  borderRadius: 4
+                }
+              }}
+            >
+              {new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(currentDate)}
+            </Typography>
+            
+            <IconButton 
+              onClick={handleNextMonth}
+              component={motion.button}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              sx={{
+                bgcolor: theme => alpha(theme.palette.primary.main, 0.1),
+                '&:hover': {
+                  bgcolor: theme => alpha(theme.palette.primary.main, 0.2),
+                },
+              }}
+            >
+              <ChevronRightIcon />
+            </IconButton>
+          </Box>
+          
+          {/* Дни недели */}
+          <Grid container spacing={1} columns={7} sx={{ mb: 1 }}>
+            {weekDays.map((day, index) => (
+              <Grid item xs={1} key={index}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    display: 'block',
+                    fontWeight: 'medium',
+                    color: theme => index >= 5 ? theme.palette.primary.main : theme.palette.text.secondary,
+                  }}
+                >
+                  {day}
+                </Typography>
+              </Grid>
+            ))}
+          </Grid>
+          
+          {/* Календарная сетка */}
+          <Grid 
+            container 
+            spacing={1} 
+            columns={7}
+            sx={{
+              p: 1,
+              borderRadius: '12px',
+              bgcolor: theme => alpha(theme.palette.background.paper, 0.5),
+              boxShadow: theme => `inset 0 0 8px ${alpha(theme.palette.primary.main, 0.05)}`,
+            }}
+          >
+            {dates.map((week, row) =>
+              week.map((day, col) => (
+                <Grid item xs={1} key={`${row}-${col}`} sx={{ 
+                  aspectRatio: '1/1',
+                  p: 0.5,
+                }}>
+                  {renderDate(day, row, col)}
+                </Grid>
+              ))
+            )}
+          </Grid>
+        </Box>
+      </motion.div>
+    );
+  };
+
   if (loading) {
     return <Loading />;
   }
@@ -243,11 +479,17 @@ const CalendarView = () => {
               bottom: -8,
               left: '50%',
               transform: 'translateX(-50%)',
-              width: 40,
+              width: 50,
               height: 3,
-              backgroundColor: theme.palette.primary.main,
+              background: theme => `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
               borderRadius: 4
-            }
+            },
+            // Добавляем текстовый градиент
+            background: theme => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            textFillColor: 'transparent',
           }}
         >
           Мои напоминания
@@ -259,7 +501,7 @@ const CalendarView = () => {
             width: '100%', 
             borderRadius: '20px',
             overflow: 'hidden',
-            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`
+            boxShadow: theme => `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
           }}
         >
           <Tabs 
@@ -270,41 +512,75 @@ const CalendarView = () => {
               minHeight: isMobile ? '42px' : '46px',
               '& .MuiTabs-indicator': {
                 height: 3,
-                borderRadius: '3px 3px 0 0'
+                borderRadius: '3px 3px 0 0',
+                background: theme => `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
               }
             }}
           >
             <Tab 
               value="calendar" 
-              icon={<CalendarIcon fontSize="small" />} 
+              icon={
+                <Box 
+                  component={motion.div}
+                  animate={{ 
+                    scale: viewMode === 'calendar' ? [1, 1.2, 1] : 1, 
+                    transition: { duration: 0.4 } 
+                  }}
+                >
+                  <CalendarIcon fontSize="small" />
+                </Box>
+              } 
               label="Календарь"
               sx={{ 
                 minHeight: isMobile ? '42px' : '46px',
                 fontWeight: viewMode === 'calendar' ? 'medium' : 'normal',
                 textTransform: 'none',
-                fontSize: isMobile ? 14 : 15
+                fontSize: isMobile ? 14 : 15,
+                transition: theme => theme.transitions.micro,
               }}
             />
             <Tab 
               value="focus" 
-              icon={<TimerIcon fontSize="small" />}
+              icon={
+                <Box 
+                  component={motion.div}
+                  animate={{ 
+                    scale: viewMode === 'focus' ? [1, 1.2, 1] : 1, 
+                    transition: { duration: 0.4 } 
+                  }}
+                >
+                  <TimerIcon fontSize="small" />
+                </Box>
+              }
               label="Фокус" 
               sx={{ 
                 minHeight: isMobile ? '42px' : '46px',
                 fontWeight: viewMode === 'focus' ? 'medium' : 'normal',
                 textTransform: 'none',
-                fontSize: isMobile ? 14 : 15
+                fontSize: isMobile ? 14 : 15,
+                transition: theme => theme.transitions.micro,
               }} 
             />
             <Tab 
               value="timeline" 
-              icon={<TimelineIcon fontSize="small" />}
+              icon={
+                <Box 
+                  component={motion.div}
+                  animate={{ 
+                    scale: viewMode === 'timeline' ? [1, 1.2, 1] : 1, 
+                    transition: { duration: 0.4 } 
+                  }}
+                >
+                  <TimelineIcon fontSize="small" />
+                </Box>
+              }
               label="Лента" 
               sx={{ 
                 minHeight: isMobile ? '42px' : '46px',
                 fontWeight: viewMode === 'timeline' ? 'medium' : 'normal',
                 textTransform: 'none',
-                fontSize: isMobile ? 14 : 15
+                fontSize: isMobile ? 14 : 15,
+                transition: theme => theme.transitions.micro,
               }}
             />
           </Tabs>
@@ -319,138 +595,7 @@ const CalendarView = () => {
           animate="animate"
           exit="exit"
         >
-          {/* Заголовок месяца и навигация */}
-          <Box sx={{ 
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 2
-          }}>
-            <IconButton onClick={prevMonth}>
-              <PrevIcon />
-            </IconButton>
-            
-            <Typography variant="h6" fontWeight="medium">
-              {MONTHS[currentDate.month()]} {currentDate.year()}
-            </Typography>
-            
-            <IconButton onClick={nextMonth}>
-              <NextIcon />
-            </IconButton>
-          </Box>
-
-          {/* Дни недели */}
-          <TableHead>
-            <TableRow>
-              {WEEKDAYS_SHORT.map((day) => (
-                <TableCell key={day} align="center" 
-                  sx={{ padding: isMobile ? '6px 2px' : '8px 4px', fontSize: isMobile ? '0.7rem' : '0.8rem' }}>
-                  {day}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-
-          {/* Календарная сетка */}
-          <Grid container spacing={isMobile ? 0.3 : 0.5}>
-            {calendarDays.map((day, index) => {
-              const isCurrentMonth = day.month() === currentDate.month();
-              const isCurrent = isToday(day.toDate());
-              const isSelected = selectedDate && day.isSame(selectedDate, 'day');
-              const eventColor = getDateColor(day);
-              const eventCount = getEventCount(day);
-              
-              return (
-                <Grid item xs={12/7} key={index}>
-                  <Paper
-                    elevation={isCurrent || isSelected ? 3 : 0}
-                    sx={{
-                      position: 'relative',
-                      height: isMobile ? '40px' : '50px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      bgcolor: isSelected 
-                        ? alpha(theme.palette.primary.main, 0.1) 
-                        : isCurrent 
-                          ? alpha(theme.palette.primary.main, 0.05) 
-                          : isCurrentMonth 
-                            ? 'background.paper' 
-                            : alpha(theme.palette.action.disabledBackground, 0.3),
-                      color: !isCurrentMonth 
-                        ? theme.palette.text.disabled
-                        : theme.palette.text.primary,
-                      border: isSelected
-                        ? `2px solid ${theme.palette.primary.main}`
-                        : isCurrent
-                          ? `1px solid ${theme.palette.primary.main}`
-                          : 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.05),
-                        transform: 'scale(1.02)'
-                      },
-                      '&:active': {
-                        transform: 'scale(0.98)'
-                      }
-                    }}
-                    onClick={() => handleDateClick(day)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      handleLongPress(day);
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={isCurrent ? 'bold' : 'normal'} fontSize={isMobile ? '0.8rem' : '0.9rem'}>
-                      {day.date()}
-                    </Typography>
-                    
-                    {/* Индикаторы событий */}
-                    {eventCount > 0 && (
-                      <Box sx={{ 
-                        display: 'flex', 
-                        position: 'absolute',
-                        bottom: '2px',
-                        gap: '2px'
-                      }}>
-                        {eventCount <= 3 ? (
-                          // Для небольшого количества событий показываем точки
-                          Array(eventCount).fill(0).map((_, i) => (
-                            <Box
-                              key={i}
-                              sx={{
-                                width: isMobile ? '4px' : '5px',
-                                height: isMobile ? '4px' : '5px',
-                                borderRadius: '50%',
-                                backgroundColor: eventColor,
-                                opacity: 0.8 + (i * 0.1), // увеличение яркости для каждой последующей точки
-                              }}
-                            />
-                          ))
-                        ) : (
-                          // Для большого количества показываем счетчик
-                          <Badge
-                            badgeContent={eventCount}
-                            color="primary"
-                            sx={{ 
-                              '& .MuiBadge-badge': { 
-                                fontSize: '9px', 
-                                height: '14px', 
-                                minWidth: '14px',
-                                background: eventColor 
-                              } 
-                            }}
-                          />
-                        )}
-                      </Box>
-                    )}
-                  </Paper>
-                </Grid>
-              );
-            })}
-          </Grid>
+          {renderCalendar()}
 
           {/* Список событий на выбранную дату */}
           <Fade in={selectedDate !== null}>

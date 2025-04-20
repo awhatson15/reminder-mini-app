@@ -6,4 +6,6 @@ export { default as NeuIcon } from './NeuIcon';
 export { default as NeuSwitch } from './NeuSwitch';
 export { default as NeuInput } from './NeuInput';
 export { default as NeuList } from './NeuList';
-export { default as NeuProgress } from './NeuProgress'; 
+export { default as NeuProgress } from './NeuProgress';
+export { default as NeuTooltip } from './NeuTooltip';
+export { default as NeuBadge } from './NeuBadge'; 

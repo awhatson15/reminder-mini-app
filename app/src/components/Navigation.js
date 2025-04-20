@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import { NeuIconButton } from './neumorphic';
+import { NeuIcon } from './neumorphic';
 import { 
   Home as HomeIcon,
   Add as AddIcon
@@ -21,13 +21,18 @@ const Navigation = ({ onAddClick, onHomeClick }) => {
         gap: 2
       }}
     >
-      <NeuIconButton onClick={onHomeClick}>
-        <HomeIcon />
-      </NeuIconButton>
+      <NeuIcon 
+        icon={<HomeIcon />}
+        clickable
+        onClick={onHomeClick}
+      />
       
-      <NeuIconButton onClick={onAddClick} color="primary">
-        <AddIcon />
-      </NeuIconButton>
+      <NeuIcon 
+        icon={<AddIcon />}
+        clickable
+        color="primary"
+        onClick={onAddClick}
+      />
     </Box>
   );
 };

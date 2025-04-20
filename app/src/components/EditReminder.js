@@ -390,7 +390,9 @@ const EditReminder = () => {
   };
   
   // Переход к следующему шагу
-  const handleNext = () => {
+  const handleNext = (e) => {
+    e.preventDefault(); // Предотвращаем сабмит формы
+    
     const fieldsToValidate = {
       0: ['title', 'type'],
       1: ['day', 'month', ...(type === 'event' ? ['year'] : [])],
@@ -907,6 +909,7 @@ const EditReminder = () => {
                     variant="contained"
                     onClick={handleNext}
                     endIcon={<NextIcon />}
+                    type="button"
                     sx={{ borderRadius: 8 }}
                   >
                     Далее

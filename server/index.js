@@ -6,12 +6,28 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const TelegramBot = require('node-telegram-bot-api');
+const compression = require('compression');
+require('express-async-errors'); // Автоматически перехватывает ошибки в async маршрутах
 const { logger } = require('./utils/logger');
 const { startScheduler } = require('./scheduler');
+const errorHandler = require('./middlewares/errorHandler');
+const { verifyTelegramWebAppData } = require('./middlewares/telegramAuth');
 
 // Инициализация Express приложения
 const app = express();
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const DEFAULT_PAGE_LIMIT = parseInt(process.env.DEFAULT_PAGE_LIMIT || '20', 10);
+
+// Добавляем глобальные настройки в app.locals
+app.locals = {
+  appName: 'Reminder Mini App',
+  version: '1.0.0',
+  defaultPageLimit: DEFAULT_PAGE_LIMIT,
+  isProduction: NODE_ENV === 'production',
+  isDevelopment: NODE_ENV === 'development',
+  isTest: NODE_ENV === 'test'
+};
 
 // Настройка безопасности и логирования
 app.use(helmet({
@@ -20,9 +36,18 @@ app.use(helmet({
 }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
-// Настройка CORS для работы со всеми источниками (включая Telegram)
+// Включаем сжатие ответов
+app.use(compression());
+
+// Настройка CORS
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : (NODE_ENV === 'production' 
+    ? [process.env.WEBHOOK_URL, 'https://telegram.org', 'https://web.telegram.org'] 
+    : '*');
+
 app.use(cors({
-  origin: '*',  // Разрешаем все источники для тестирования
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -30,12 +55,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Обслуживание статических файлов
-app.use(express.static(path.join(__dirname, '../app/build')));
+app.use(express.static(path.join(__dirname, '../app/build'), {
+  maxAge: NODE_ENV === 'production' ? '1d' : 0 // Кешируем статические файлы только в production
+}));
 
 // Подключение к MongoDB
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+  autoIndex: NODE_ENV !== 'production' // Отключаем автоиндексацию в production
+})
   .then(() => {
-    logger.info('Connected to MongoDB');
+    logger.info(`Connected to MongoDB (${process.env.MONGO_URI.split('@').pop()})`);
     
     // Запускаем планировщик после подключения к базе данных
     startScheduler();
@@ -73,6 +102,11 @@ bot.onText(/\/start/, async (msg) => {
   }
 });
 
+// Защита API маршрутов (отключено в режиме разработки)
+if (NODE_ENV === 'production') {
+  app.use('/api', verifyTelegramWebAppData);
+}
+
 // API маршруты
 app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/users', require('./routes/users'));
@@ -82,7 +116,26 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../app/build', 'index.html'));
 });
 
+// Глобальная обработка ошибок
+app.use(errorHandler);
+
+// Отлавливаем необработанные исключения
+process.on('uncaughtException', (error) => {
+  logger.error('Необработанное исключение:', error);
+  
+  // В production режиме останавливаем сервер при критических ошибках
+  if (NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
+
+// Отлавливаем необработанные Promise rejection
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Необработанный Promise rejection:', reason);
+});
+
 // Запуск сервера
-app.listen(PORT, '0.0.0.0', () => {  // Изменено на '0.0.0.0' для приема соединений извне
-  logger.info(`Server is running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  logger.info(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
+  logger.info(`API documentation available at /api/docs`);
 }); 

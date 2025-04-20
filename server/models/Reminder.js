@@ -65,4 +65,10 @@ reminderSchema.pre('findOneAndUpdate', function() {
   this.set({ updatedAt: new Date() });
 });
 
+// Создаем индексы для оптимизации запросов
+reminderSchema.index({ user: 1 });
+reminderSchema.index({ user: 1, 'date.month': 1, 'date.day': 1 });
+reminderSchema.index({ user: 1, title: 1 });
+reminderSchema.index({ user: 1, type: 1 });
+
 module.exports = mongoose.model('Reminder', reminderSchema); 

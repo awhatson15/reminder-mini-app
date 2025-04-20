@@ -1,6 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
-const Reminder = require('../models/Reminder');
-const User = require('../models/User');
+const reminderRepository = require('../repositories/reminderRepository');
+const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
 
 // Подключаем бота
@@ -56,18 +56,17 @@ const getDaysUntil = (day, month, year) => {
 const sendReminders = async () => {
   try {
     const today = new Date();
-    const currentDay = today.getDate();
-    const currentMonth = today.getMonth() + 1;
-    const currentYear = today.getFullYear();
-    
     logger.info('Запуск проверки предстоящих событий');
     
     // Получаем всех пользователей
-    const users = await User.find();
+    const users = await userRepository.findAll();
+    
+    // Для отслеживания отправленных напоминаний
+    let sentCount = 0;
     
     for (const user of users) {
       // Получаем все напоминания этого пользователя
-      const reminders = await Reminder.find({ user: user._id });
+      const reminders = await reminderRepository.findByUserId(user._id);
       
       // Проверяем каждое напоминание
       for (const reminder of reminders) {
@@ -92,6 +91,7 @@ const sendReminders = async () => {
           try {
             await bot.sendMessage(user.telegramId, message);
             logger.info(`Отправлено напоминание пользователю ${user.telegramId}: ${title}`);
+            sentCount++;
           } catch (error) {
             logger.error(`Ошибка при отправке напоминания пользователю ${user.telegramId}:`, error);
           }
@@ -99,7 +99,7 @@ const sendReminders = async () => {
       }
     }
     
-    logger.info('Завершена проверка предстоящих событий');
+    logger.info(`Завершена проверка предстоящих событий. Отправлено напоминаний: ${sentCount}`);
   } catch (error) {
     logger.error('Ошибка при отправке напоминаний:', error);
   }

@@ -1,7 +1,102 @@
 const reminderRepository = require('../repositories/reminderRepository');
 const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
-const { validateRequiredFields, validateFieldTypes } = require('../middlewares/validation');
+
+/**
+ * Проверка обязательных полей в объекте
+ * @param {Object} obj - Проверяемый объект
+ * @param {Array} requiredFields - Список обязательных полей
+ * @returns {Array} - Массив ошибок (пустой, если ошибок нет)
+ */
+const validateRequiredFields = (obj, requiredFields) => {
+  const errors = [];
+  
+  for (const field of requiredFields) {
+    if (obj[field] === undefined || obj[field] === null || obj[field] === '') {
+      errors.push(`Поле '${field}' обязательно`);
+    }
+  }
+  
+  return errors;
+};
+
+/**
+ * Проверка типа полей в объекте
+ * @param {Object} obj - Проверяемый объект
+ * @param {Object} fieldTypes - Объект с ожидаемыми типами полей
+ * @returns {Array} - Массив ошибок (пустой, если ошибок нет)
+ */
+const validateFieldTypes = (obj, fieldTypes) => {
+  const errors = [];
+  
+  for (const [field, expectedType] of Object.entries(fieldTypes)) {
+    // Пропускаем необязательные поля, которых нет в объекте
+    if (obj[field] === undefined) continue;
+    
+    // Проверка на null
+    if (obj[field] === null) {
+      if (expectedType !== 'null') {
+        errors.push(`Поле '${field}' не может быть null`);
+      }
+      continue;
+    }
+    
+    // Проверка числового типа
+    if (expectedType === 'number') {
+      if (typeof obj[field] !== 'number' || isNaN(obj[field])) {
+        errors.push(`Поле '${field}' должно быть числом`);
+      }
+      continue;
+    }
+    
+    // Проверка строкового типа
+    if (expectedType === 'string') {
+      if (typeof obj[field] !== 'string') {
+        errors.push(`Поле '${field}' должно быть строкой`);
+      }
+      continue;
+    }
+    
+    // Проверка логического типа
+    if (expectedType === 'boolean') {
+      if (typeof obj[field] !== 'boolean') {
+        errors.push(`Поле '${field}' должно быть логическим значением`);
+      }
+      continue;
+    }
+    
+    // Проверка типа "объект"
+    if (expectedType === 'object') {
+      if (typeof obj[field] !== 'object' || obj[field] === null || Array.isArray(obj[field])) {
+        errors.push(`Поле '${field}' должно быть объектом`);
+      }
+      continue;
+    }
+    
+    // Проверка типа "массив"
+    if (expectedType === 'array') {
+      if (!Array.isArray(obj[field])) {
+        errors.push(`Поле '${field}' должно быть массивом`);
+      }
+      continue;
+    }
+    
+    // Проверка на соответствие перечислению
+    if (Array.isArray(expectedType)) {
+      if (!expectedType.includes(obj[field])) {
+        errors.push(`Поле '${field}' должно быть одним из: ${expectedType.join(', ')}`);
+      }
+      continue;
+    }
+    
+    // Общая проверка типа
+    if (typeof obj[field] !== expectedType) {
+      errors.push(`Поле '${field}' имеет неверный тип. Ожидается: ${expectedType}`);
+    }
+  }
+  
+  return errors;
+};
 
 /**
  * Сервис для работы с напоминаниями

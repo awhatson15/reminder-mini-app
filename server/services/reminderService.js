@@ -1,6 +1,7 @@
 const reminderRepository = require('../repositories/reminderRepository');
 const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
+const { sendReminderPush } = require('./pushService');
 
 /**
  * Проверка обязательных полей в объекте
@@ -209,11 +210,21 @@ class ReminderService {
       // Формируем данные для сохранения
       const dataToSave = {
         ...reminderDetails,
-        user: user._id
+        user: user._id,
+        status: 'pending'
       };
       
       // Сохраняем напоминание
       const reminder = await reminderRepository.create(dataToSave);
+      
+      // Если дата в будущем, планируем отправку
+      if (reminder.date > new Date()) {
+        this.scheduleReminder(reminder);
+      } else {
+        // Если дата уже прошла, отправляем сразу
+        await this.sendReminderPush(telegramId, reminder);
+        await reminderRepository.updateStatus(reminder._id, 'sent');
+      }
       
       logger.info(`Создано напоминание для пользователя ${telegramId}: ${reminder.title}`);
       return reminder;
@@ -369,6 +380,32 @@ class ReminderService {
     // Если есть ошибки, выбрасываем исключение
     if (errors.length > 0) {
       throw new Error(`Ошибка валидации данных: ${errors.join('; ')}`);
+    }
+  }
+
+  // Планирование отправки напоминания
+  scheduleReminder(reminder) {
+    const delay = reminder.date - Date.now();
+    
+    if (delay > 0) {
+      setTimeout(async () => {
+        try {
+          await this.sendReminderPush(reminder.telegramId, reminder);
+          await reminderRepository.updateStatus(reminder._id, 'sent');
+        } catch (error) {
+          logger.error('Ошибка при отправке запланированного напоминания:', error);
+        }
+      }, delay);
+    }
+  }
+
+  // Отправка напоминания
+  async sendReminderPush(telegramId, reminder) {
+    try {
+      await sendReminderPush(telegramId, reminder);
+    } catch (error) {
+      logger.error('Ошибка при отправке напоминания:', error);
+      throw error;
     }
   }
 }

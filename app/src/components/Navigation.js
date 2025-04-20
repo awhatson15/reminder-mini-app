@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Box, styled } from '@mui/material';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Add as AddIcon,
@@ -8,6 +8,7 @@ import {
   Settings as SettingsIcon 
 } from '@mui/icons-material';
 import { NeuIcon } from './neumorphic';
+import { ThemeContext } from '../App';
 
 // Стилизованная навигационная панель
 const NavContainer = styled(Box)(({ theme }) => ({
@@ -21,8 +22,9 @@ const NavContainer = styled(Box)(({ theme }) => ({
   padding: '12px 0',
   backgroundColor: theme.palette.background.default,
   zIndex: 10,
-  boxShadow: '0px -2px 10px rgba(0, 0, 0, 0.05)',
+  boxShadow: theme.palette.neumorphic.boxShadow,
   backdropFilter: 'blur(10px)',
+  transition: 'all 0.3s ease',
 }));
 
 // Анимированный индикатор активного пункта
@@ -45,10 +47,18 @@ const ActiveIndicator = ({ x }) => (
   />
 );
 
+// Анимация для иконок
+const iconVariants = {
+  initial: { scale: 1 },
+  hover: { scale: 1.1 },
+  tap: { scale: 0.95 }
+};
+
 // Главный компонент навигации
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isDarkMode } = useContext(ThemeContext);
   
   // Определение активного пункта меню
   const getActiveIndex = () => {
@@ -68,32 +78,50 @@ const Navigation = () => {
       <ActiveIndicator x={indicatorPositions[activeIndex]} />
       
       {/* Календарь */}
-      <NeuIcon
-        icon={<CalendarIcon />}
-        variant={activeIndex === 0 ? 'inset' : 'raised'}
-        color={activeIndex === 0 ? 'primary.main' : 'text.secondary'}
-        clickable
-        onClick={() => navigate('/')}
-      />
+      <motion.div
+        variants={iconVariants}
+        whileHover="hover"
+        whileTap="tap"
+      >
+        <NeuIcon
+          icon={<CalendarIcon />}
+          variant={activeIndex === 0 ? 'inset' : 'raised'}
+          color={activeIndex === 0 ? 'primary.main' : 'text.secondary'}
+          clickable
+          onClick={() => navigate('/')}
+        />
+      </motion.div>
       
       {/* Добавить */}
-      <NeuIcon
-        icon={<AddIcon />}
-        variant={activeIndex === 1 ? 'inset' : 'raised'}
-        color={activeIndex === 1 ? 'primary.main' : 'text.secondary'}
-        clickable
-        onClick={() => navigate('/add')}
-        size="large"
-      />
+      <motion.div
+        variants={iconVariants}
+        whileHover="hover"
+        whileTap="tap"
+      >
+        <NeuIcon
+          icon={<AddIcon />}
+          variant={activeIndex === 1 ? 'inset' : 'raised'}
+          color={activeIndex === 1 ? 'primary.main' : 'text.secondary'}
+          clickable
+          onClick={() => navigate('/add')}
+          size="large"
+        />
+      </motion.div>
       
       {/* Настройки */}
-      <NeuIcon
-        icon={<SettingsIcon />}
-        variant={activeIndex === 2 ? 'inset' : 'raised'}
-        color={activeIndex === 2 ? 'primary.main' : 'text.secondary'}
-        clickable
-        onClick={() => navigate('/settings')}
-      />
+      <motion.div
+        variants={iconVariants}
+        whileHover="hover"
+        whileTap="tap"
+      >
+        <NeuIcon
+          icon={<SettingsIcon />}
+          variant={activeIndex === 2 ? 'inset' : 'raised'}
+          color={activeIndex === 2 ? 'primary.main' : 'text.secondary'}
+          clickable
+          onClick={() => navigate('/settings')}
+        />
+      </motion.div>
     </NavContainer>
   );
 };

@@ -2,11 +2,17 @@ import { createTheme } from '@mui/material/styles';
 
 // Неоморфная тема для приложения
 const createNeumorphicTheme = (isDarkMode = false) => {
-  // Основные цвета
+  // Основные цвета для светлой темы
   const lightBackground = '#F7F7F7';
   const lightSurface = '#EDEDED';
   const lightText = '#2C2F35';
   const lightTextSecondary = '#7A7A7A';
+  
+  // Основные цвета для темной темы
+  const darkBackground = '#1A1A1A';
+  const darkSurface = '#2D2D2D';
+  const darkText = '#FFFFFF';
+  const darkTextSecondary = '#B0B0B0';
   
   // Акцентные цвета
   const accentBlue = '#3D9DF6';
@@ -28,13 +34,25 @@ const createNeumorphicTheme = (isDarkMode = false) => {
       inset: 'inset 2px 2px 5px rgba(0, 0, 0, 0.1), inset -2px -2px 5px rgba(255, 255, 255, 0.5)',
       elevated: '10px 10px 20px rgba(0, 0, 0, 0.1), -10px -10px 20px rgba(255, 255, 255, 1)',
       pressed: 'inset 4px 4px 8px rgba(0, 0, 0, 0.1), inset -4px -4px 8px rgba(255, 255, 255, 0.8)',
+    },
+    dark: {
+      default: '5px 5px 10px rgba(0, 0, 0, 0.3), -5px -5px 10px rgba(255, 255, 255, 0.05)',
+      inset: 'inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.05)',
+      elevated: '10px 10px 20px rgba(0, 0, 0, 0.3), -10px -10px 20px rgba(255, 255, 255, 0.05)',
+      pressed: 'inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.05)',
     }
   };
+  
+  const shadows = isDarkMode ? neumorphicShadows.dark : neumorphicShadows.light;
+  const background = isDarkMode ? darkBackground : lightBackground;
+  const surface = isDarkMode ? darkSurface : lightSurface;
+  const text = isDarkMode ? darkText : lightText;
+  const textSecondary = isDarkMode ? darkTextSecondary : lightTextSecondary;
   
   // Создаем тему MUI
   return createTheme({
     palette: {
-      mode: 'light',
+      mode: isDarkMode ? 'dark' : 'light',
       primary: {
         main: accentBlue,
         contrastText: '#ffffff',
@@ -44,12 +62,12 @@ const createNeumorphicTheme = (isDarkMode = false) => {
         contrastText: '#ffffff',
       },
       background: {
-        default: lightBackground,
-        paper: lightSurface,
+        default: background,
+        paper: surface,
       },
       text: {
-        primary: lightText,
-        secondary: lightTextSecondary,
+        primary: text,
+        secondary: textSecondary,
       },
       action: {
         active: accentBlue,
@@ -57,12 +75,12 @@ const createNeumorphicTheme = (isDarkMode = false) => {
       },
       // Кастомные цвета для неоморфного дизайна
       neumorphic: {
-        boxShadow: neumorphicShadows.light.default,
-        boxShadowInset: neumorphicShadows.light.inset,
-        boxShadowElevated: neumorphicShadows.light.elevated,
-        active: neumorphicShadows.light.pressed,
-        background: lightBackground,
-        surface: lightSurface,
+        boxShadow: shadows.default,
+        boxShadowInset: shadows.inset,
+        boxShadowElevated: shadows.elevated,
+        active: shadows.pressed,
+        background: background,
+        surface: surface,
       },
       typeColors: typeColors,
     },
@@ -111,7 +129,7 @@ const createNeumorphicTheme = (isDarkMode = false) => {
       subtitle2: {
         fontSize: '14px',
         fontWeight: 300,
-        color: lightTextSecondary,
+        color: textSecondary,
       },
     },
     shape: {
@@ -123,15 +141,15 @@ const createNeumorphicTheme = (isDarkMode = false) => {
           root: {
             borderRadius: 16,
             padding: '10px 20px',
-            boxShadow: neumorphicShadows.light.default,
+            boxShadow: shadows.default,
             textTransform: 'none',
             transition: 'all 0.3s',
             '&:hover': {
-              boxShadow: neumorphicShadows.light.elevated,
+              boxShadow: shadows.elevated,
               transform: 'translateY(-2px)',
             },
             '&:active': {
-              boxShadow: neumorphicShadows.light.pressed,
+              boxShadow: shadows.pressed,
               transform: 'translateY(0)',
             },
           },
@@ -141,8 +159,13 @@ const createNeumorphicTheme = (isDarkMode = false) => {
         styleOverrides: {
           root: {
             borderRadius: 24,
-            boxShadow: neumorphicShadows.light.default,
-            background: lightSurface,
+            boxShadow: shadows.default,
+            background: surface,
+            transition: 'all 0.3s',
+            '&:hover': {
+              boxShadow: shadows.elevated,
+              transform: 'translateY(-2px)',
+            },
           },
         },
       },
@@ -151,7 +174,7 @@ const createNeumorphicTheme = (isDarkMode = false) => {
           root: {
             '& .MuiOutlinedInput-root': {
               borderRadius: 16,
-              boxShadow: neumorphicShadows.light.inset,
+              boxShadow: shadows.inset,
               '& fieldset': {
                 borderColor: 'transparent',
               },
@@ -168,8 +191,35 @@ const createNeumorphicTheme = (isDarkMode = false) => {
       MuiPaper: {
         styleOverrides: {
           root: {
-            boxShadow: neumorphicShadows.light.default,
+            boxShadow: shadows.default,
             backgroundImage: 'none',
+          },
+        },
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            background: surface,
+            boxShadow: shadows.default,
+          },
+        },
+      },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            background: surface,
+            boxShadow: shadows.default,
+          },
+        },
+      },
+      MuiListItem: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+            margin: '4px 8px',
+            '&:hover': {
+              background: isDarkMode ? '#3D3D3D' : '#F0F0F0',
+            },
           },
         },
       },

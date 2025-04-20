@@ -109,6 +109,53 @@ class UserRepository {
       throw error;
     }
   }
+
+  // Обновление push-токена
+  async updatePushToken(telegramId, pushToken) {
+    try {
+      return await User.findOneAndUpdate(
+        { telegramId },
+        { 
+          pushToken,
+          updatedAt: new Date(),
+        },
+        { new: true }
+      );
+    } catch (error) {
+      logger.error('Ошибка при обновлении push-токена:', error);
+      throw error;
+    }
+  }
+
+  // Обновление настроек пользователя
+  async updateSettings(telegramId, settings) {
+    try {
+      return await User.findOneAndUpdate(
+        { telegramId },
+        { 
+          settings,
+          updatedAt: new Date(),
+        },
+        { new: true }
+      );
+    } catch (error) {
+      logger.error('Ошибка при обновлении настроек пользователя:', error);
+      throw error;
+    }
+  }
+
+  // Получение пользователей с активными push-уведомлениями
+  async findUsersWithPushNotifications() {
+    try {
+      return await User.find({
+        'pushToken': { $ne: null },
+        'settings.notifications.enabled': true,
+      });
+    } catch (error) {
+      logger.error('Ошибка при получении пользователей с push-уведомлениями:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new UserRepository(); 

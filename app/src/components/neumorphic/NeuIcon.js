@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Box, SvgIcon } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { motion } from 'framer-motion';
+import { ThemeContext } from '../../App';
 
 // Стилизованный контейнер для иконки с неоморфным дизайном
 const StyledIconContainer = styled(Box)(({ theme, variant, isClickable, size }) => {
@@ -57,22 +58,32 @@ const NeuIcon = ({
   iconSx = {},
   ...props
 }) => {
+  const { isDarkMode } = useContext(ThemeContext);
+  
   // Определение цвета иконки
-  const iconColor = color || (variant === 'inset' ? '#7A7A7A' : '#3D9DF6');
+  const iconColor = color || (variant === 'inset' 
+    ? isDarkMode ? '#B0B0B0' : '#7A7A7A'
+    : isDarkMode ? '#3D9DF6' : '#3D9DF6');
   
   // Анимации для иконки
   const iconVariants = {
     hover: clickable ? {
       y: -2,
       boxShadow: variant === 'inset' 
-        ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.15), inset -2px -2px 5px rgba(255, 255, 255, 0.7)'
-        : '7px 7px 14px rgba(0, 0, 0, 0.15), -7px -7px 14px rgba(255, 255, 255, 1)',
+        ? isDarkMode
+          ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.05)'
+          : 'inset 2px 2px 5px rgba(0, 0, 0, 0.15), inset -2px -2px 5px rgba(255, 255, 255, 0.7)'
+        : isDarkMode
+          ? '7px 7px 14px rgba(0, 0, 0, 0.3), -7px -7px 14px rgba(255, 255, 255, 0.05)'
+          : '7px 7px 14px rgba(0, 0, 0, 0.15), -7px -7px 14px rgba(255, 255, 255, 1)',
       transition: { duration: 0.3 }
     } : {},
     tap: clickable ? {
       y: 0,
       scale: 0.95,
-      boxShadow: 'inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -4px -4px 8px rgba(255, 255, 255, 0.7)',
+      boxShadow: isDarkMode
+        ? 'inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.05)'
+        : 'inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -4px -4px 8px rgba(255, 255, 255, 0.7)',
       transition: { duration: 0.1 }
     } : {}
   };
@@ -99,11 +110,13 @@ const NeuIcon = ({
               large: '24px',
             }[size] || '20px',
             color: iconColor,
+            transition: 'color 0.3s ease',
             ...iconSx,
-          }
+          },
         })
       ) : (
         <SvgIcon
+          component={icon}
           sx={{
             fontSize: {
               small: '16px',
@@ -111,11 +124,10 @@ const NeuIcon = ({
               large: '24px',
             }[size] || '20px',
             color: iconColor,
-            ...iconSx
+            transition: 'color 0.3s ease',
+            ...iconSx,
           }}
-        >
-          {icon}
-        </SvgIcon>
+        />
       )}
     </StyledIconContainer>
   );

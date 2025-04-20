@@ -3,8 +3,10 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Box, Container, ThemeProvider, Alert, Button } from '@mui/material';
+import { Box, Container, ThemeProvider, Alert, Button, IconButton, useMediaQuery } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 import 'dayjs/locale/ru';
 import WebApp from '@twa-dev/sdk';
 
@@ -22,27 +24,32 @@ import StatusBar from './components/StatusBar';
 
 // Контекст для пользовательских данных
 export const UserContext = createContext(null);
+export const ThemeContext = createContext(null);
 
 // Анимации для переходов страниц
 const pageVariants = {
   initial: {
     opacity: 0,
     y: 20,
+    scale: 0.98,
   },
   in: {
     opacity: 1,
     y: 0,
+    scale: 1,
   },
   out: {
     opacity: 0,
     y: -20,
+    scale: 0.98,
   }
 };
 
 const pageTransition = {
-  type: 'tween',
-  ease: 'anticipate',
-  duration: 0.4
+  type: 'spring',
+  stiffness: 100,
+  damping: 20,
+  duration: 0.3
 };
 
 // Компонент анимированной страницы
@@ -54,6 +61,10 @@ const AnimatedPage = ({ children }) => {
       exit="out"
       variants={pageVariants}
       transition={pageTransition}
+      style={{
+        position: 'relative',
+        width: '100%',
+      }}
     >
       {children}
     </motion.div>
@@ -65,11 +76,18 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [networkStatus, setNetworkStatus] = useState(isOnline);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useMediaQuery('(max-width:600px)');
   
   // Создаем неоморфную тему
-  const theme = createNeumorphicTheme(false); // Светлая тема по умолчанию
+  const theme = createNeumorphicTheme(isDarkMode);
+  
+  // Переключение темы
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
   
   useEffect(() => {
     const initApp = async () => {
@@ -207,7 +225,7 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
     position: 'relative',
     paddingBottom: '70px', // Место под навигацию
     paddingTop: '10px',
-    transition: 'background 0.5s ease',
+    transition: 'all 0.5s ease',
   };
   
   // Обработчик повторного соединения
@@ -220,63 +238,85 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
   // Пользователь всегда должен быть определен (либо реальный, либо тестовый)
   return (
     <ThemeProvider theme={theme}>
-      <UserContext.Provider value={{ user }}>
-        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-          <Box sx={containerStyles}>
-            <Container 
-              maxWidth="sm" 
-              disableGutters
-              sx={{ 
-                position: 'relative',
-                pb: 2,
-              }}
-            >
-              <Box sx={{ 
-                padding: '16px', 
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-                <StatusBar />
-                
-                {error && (
-                  <Alert 
-                    severity="error" 
-                    sx={{ mb: 2 }}
-                    action={
-                      <Button color="inherit" size="small" onClick={handleRetry}>
-                        Повторить
-                      </Button>
-                    }
-                  >
-                    {error}
-                  </Alert>
-                )}
-                
-                <AnimatePresence mode="wait">
-                  <Routes location={location} key={location.pathname}>
-                    <Route path="/" element={
-                      <AnimatedPage>
-                        <CalendarView />
-                      </AnimatedPage>
-                    } />
-                    <Route path="/add" element={
-                      <AnimatedPage>
-                        <AddReminder />
-                      </AnimatedPage>
-                    } />
-                    <Route path="/edit/:id" element={
-                      <AnimatedPage>
-                        <EditReminder />
-                      </AnimatedPage>
-                    } />
-                  </Routes>
-                </AnimatePresence>
-              </Box>
-            </Container>
-            <Navigation />
-          </Box>
-        </LocalizationProvider>
-      </UserContext.Provider>
+      <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+        <UserContext.Provider value={{ user }}>
+          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
+            <Box sx={containerStyles}>
+              <Container 
+                maxWidth="sm" 
+                disableGutters
+                sx={{ 
+                  position: 'relative',
+                  pb: 2,
+                }}
+              >
+                <Box sx={{ 
+                  padding: '16px', 
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    mb: 2
+                  }}>
+                    <StatusBar />
+                    <IconButton 
+                      onClick={toggleTheme}
+                      sx={{ 
+                        color: theme.palette.text.primary,
+                        transition: 'transform 0.3s ease',
+                        '&:hover': {
+                          transform: 'rotate(180deg)',
+                        }
+                      }}
+                    >
+                      {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+                    </IconButton>
+                  </Box>
+                  
+                  {error && (
+                    <Alert 
+                      severity="error" 
+                      sx={{ mb: 2 }}
+                      action={
+                        <Button color="inherit" size="small" onClick={handleRetry}>
+                          Повторить
+                        </Button>
+                      }
+                    >
+                      {error}
+                    </Alert>
+                  )}
+                  
+                  <AnimatePresence mode="wait">
+                    <Routes location={location} key={location.pathname}>
+                      <Route path="/" element={
+                        <AnimatedPage>
+                          <CalendarView />
+                        </AnimatedPage>
+                      } />
+                      <Route path="/add" element={
+                        <AnimatedPage>
+                          <AddReminder />
+                        </AnimatedPage>
+                      } />
+                      <Route path="/edit/:id" element={
+                        <AnimatedPage>
+                          <EditReminder />
+                        </AnimatedPage>
+                      } />
+                    </Routes>
+                  </AnimatePresence>
+                </Box>
+              </Container>
+              
+              <Navigation />
+            </Box>
+          </LocalizationProvider>
+        </UserContext.Provider>
+      </ThemeContext.Provider>
     </ThemeProvider>
   );
 };

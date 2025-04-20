@@ -21,6 +21,7 @@ import EditReminder from './components/EditReminder';
 import Navigation from './components/Navigation';
 import Loading from './components/Loading';
 import StatusBar from './components/StatusBar';
+import Settings from './components/Settings';
 
 // Контекст для пользовательских данных
 export const UserContext = createContext(null);
@@ -255,26 +256,7 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
                   display: 'flex',
                   flexDirection: 'column'
                 }}>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    mb: 2
-                  }}>
-                    <StatusBar />
-                    <IconButton 
-                      onClick={toggleTheme}
-                      sx={{ 
-                        color: theme.palette.text.primary,
-                        transition: 'transform 0.3s ease',
-                        '&:hover': {
-                          transform: 'rotate(180deg)',
-                        }
-                      }}
-                    >
-                      {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-                    </IconButton>
-                  </Box>
+                  <StatusBar />
                   
                   {error && (
                     <Alert 
@@ -305,6 +287,11 @@ const App = ({ telegramInitialized = false, isOnline = true }) => {
                       <Route path="/edit/:id" element={
                         <AnimatedPage>
                           <EditReminder />
+                        </AnimatedPage>
+                      } />
+                      <Route path="/settings" element={
+                        <AnimatedPage>
+                          <Settings />
                         </AnimatedPage>
                       } />
                     </Routes>

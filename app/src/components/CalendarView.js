@@ -75,7 +75,7 @@ const CalendarView = () => {
   const [currentDate, setCurrentDate] = useState(dayjs()); // текущая отображаемая дата
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('calendar'); // calendar, focus, timeline
+  const [viewMode, setViewMode] = useState('focus'); // calendar, focus, timeline
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);

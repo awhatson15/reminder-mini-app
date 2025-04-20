@@ -583,4 +583,23 @@ export const formatRelativeTime = (date) => {
   } else {
     return `${formattedDate} (${dayOfWeek})`;
   }
+};
+
+/**
+ * Возвращает название дня недели для указанной даты
+ * @param {Date} date - дата для получения дня недели
+ * @returns {string} название дня недели
+ */
+export const getDayOfWeek = (date) => {
+  if (!date) return '';
+  
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) return '';
+  
+  const weekdays = [
+    'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 
+    'Четверг', 'Пятница', 'Суббота'
+  ];
+  
+  return weekdays[dateObj.getDay()];
 }; 

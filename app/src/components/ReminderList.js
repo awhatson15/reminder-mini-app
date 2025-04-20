@@ -52,7 +52,6 @@ import Toast from './Toast';
 import { FixedSizeList as VirtualList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import ReminderItem from './ReminderItem';
-import { useInitData } from '../hooks/useInitData';
 import { plural } from '../utils/textUtils';
 import { formatDateForDisplay, getDayOfWeek, isToday, isTomorrow } from '../utils/dateUtils';
 

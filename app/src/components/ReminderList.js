@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, 
@@ -18,7 +18,12 @@ import {
   Alert,
   Avatar,
   useTheme,
-  alpha
+  alpha,
+  ToggleButtonGroup,
+  ToggleButton,
+  Badge,
+  Paper,
+  CircularProgress
 } from '@mui/material';
 import { 
   Cake as CakeIcon, 
@@ -28,15 +33,31 @@ import {
   SortByAlpha as SortIcon,
   AccessTime as TimeIcon,
   Sort as SortNameIcon,
-  CalendarMonth as CalendarIcon
+  CalendarMonth as CalendarIcon,
+  WorkOutline as WorkIcon,
+  FamilyRestroom as FamilyIcon,
+  Person as PersonIcon,
+  MoreHoriz as OtherIcon,
+  FilterList as FilterIcon,
+  Repeat as RepeatIcon,
+  ReplayOutlined as RefreshIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { UserContext } from '../App';
 import Loading from './Loading';
 import { motion } from 'framer-motion';
-import { getDaysUntil } from '../utils/dateUtils';
+import { getDaysUntil, getFormattedDateFromReminder, clearDaysUntilCache, getRelativeDateString } from '../utils/dateUtils';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
+import { FixedSizeList as VirtualList } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import ReminderItem from './ReminderItem';
+
+// Константа с названиями месяцев для форматирования даты
+const MONTH_NAMES = [
+  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+];
 
 // Анимация списка
 const listVariants = {
@@ -69,6 +90,68 @@ const itemVariants = {
   hidden: { opacity: 0, y: 20 }
 };
 
+/**
+ * Группирует напоминания по времени (сегодня, завтра, на неделе, позже)
+ * @param {Array} reminders - массив напоминаний
+ * @returns {Object} сгруппированные напоминания
+ */
+const groupRemindersByTime = (reminders) => {
+  const groups = {
+    today: [],
+    tomorrow: [],
+    thisWeek: [],
+    later: []
+  };
+
+  reminders.forEach(reminder => {
+    const daysUntil = getDaysUntil(reminder.date);
+    
+    if (daysUntil === 0) {
+      groups.today.push(reminder);
+    } else if (daysUntil === 1) {
+      groups.tomorrow.push(reminder);
+    } else if (daysUntil <= 7) {
+      groups.thisWeek.push(reminder);
+    } else {
+      groups.later.push(reminder);
+    }
+  });
+
+  return groups;
+};
+
+/**
+ * Подготавливает группы напоминаний для виртуализированного списка
+ * @param {Object} groups - группы напоминаний
+ * @returns {Array} подготовленные элементы для списка
+ */
+const prepareItemsForVirtualList = (groups) => {
+  const items = [];
+  
+  // Для каждой группы добавляем заголовок и элементы
+  const addGroupToItems = (reminders, title) => {
+    if (reminders.length > 0) {
+      items.push({ type: 'header', title, key: `header-${title}` });
+      reminders.forEach(reminder => {
+        items.push({ type: 'reminder', reminder, key: `reminder-${reminder._id}` });
+      });
+      items.push({ type: 'divider', key: `divider-${title}` });
+    }
+  };
+  
+  addGroupToItems(groups.today, 'Сегодня');
+  addGroupToItems(groups.tomorrow, 'Завтра');
+  addGroupToItems(groups.thisWeek, 'На этой неделе');
+  addGroupToItems(groups.later, 'Позже');
+  
+  // Удаляем последний разделитель, если он есть
+  if (items.length > 0 && items[items.length - 1].type === 'divider') {
+    items.pop();
+  }
+  
+  return items;
+};
+
 const ReminderList = () => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
@@ -79,6 +162,7 @@ const ReminderList = () => {
   const [reminderToDelete, setReminderToDelete] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [sortType, setSortType] = useState('date'); // 'date' или 'name'
+  const [selectedGroup, setSelectedGroup] = useState('all'); // 'all', 'семья', 'работа', 'друзья', 'другое'
 
   // Загрузка напоминаний
   useEffect(() => {
@@ -87,6 +171,10 @@ const ReminderList = () => {
         setLoading(true);
         const response = await axios.get(`/api/reminders?telegramId=${user.telegramId}`);
         setReminders(response.data);
+        
+        // Очищаем кэш расчета дней при обновлении данных
+        clearDaysUntilCache();
+        
         setLoading(false);
       } catch (error) {
         console.error('Ошибка при загрузке напоминаний:', error);
@@ -102,18 +190,21 @@ const ReminderList = () => {
     fetchReminders();
   }, [user]);
 
-  // Обработчик удаления напоминания
-  const handleDelete = async () => {
+  // Обработчик удаления напоминания (мемоизация для предотвращения перерисовок)
+  const handleDelete = useCallback(async () => {
     if (!reminderToDelete) return;
     
     try {
       await axios.delete(`/api/reminders/${reminderToDelete._id}`);
-      setReminders(reminders.filter(r => r._id !== reminderToDelete._id));
+      setReminders(prevReminders => prevReminders.filter(r => r._id !== reminderToDelete._id));
       setSnackbar({
         open: true,
         message: 'Напоминание удалено',
         severity: 'success'
       });
+      
+      // Очищаем кэш расчета дней при удалении напоминания
+      clearDaysUntilCache();
     } catch (error) {
       console.error('Ошибка при удалении напоминания:', error);
       setSnackbar({
@@ -125,45 +216,42 @@ const ReminderList = () => {
     
     setDeleteDialogOpen(false);
     setReminderToDelete(null);
-  };
+  }, [reminderToDelete]);
 
-  // Функция для форматирования даты
-  const formatDate = (date) => {
-    const day = date.day;
-    const month = date.month;
-    const year = date.year;
-    
-    const monthNames = [
-      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-    ];
-    
-    return `${day} ${monthNames[month - 1]}${year ? ` ${year} г.` : ''}`;
-  };
-
-  // Сортировка ремайндеров
-  const sortedReminders = [...reminders].sort((a, b) => {
-    if (sortType === 'date') {
-      const daysA = getDaysUntil(a.date);
-      const daysB = getDaysUntil(b.date);
-      return daysA - daysB;
-    } else {
-      return a.title.localeCompare(b.title);
+  // Обработчик изменения группы для фильтрации (мемоизация)
+  const handleGroupChange = useCallback((event, newGroup) => {
+    if (newGroup !== null) {
+      setSelectedGroup(newGroup);
     }
-  });
+  }, []);
 
-  // Изменение типа сортировки
-  const toggleSortType = () => {
-    setSortType(sortType === 'date' ? 'name' : 'date');
-  };
+  // Получение иконки группы (мемоизированная функция)
+  const getGroupIcon = useCallback((groupName) => {
+    switch (groupName) {
+      case 'семья':
+        return <FamilyIcon />;
+      case 'работа':
+        return <WorkIcon />;
+      case 'друзья':
+        return <PersonIcon />;
+      case 'другое':
+      default:
+        return <OtherIcon />;
+    }
+  }, []);
 
-  // Закрытие snackbar
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
+  // Изменение типа сортировки (мемоизация)
+  const toggleSortType = useCallback(() => {
+    setSortType(prevType => prevType === 'date' ? 'name' : 'date');
+  }, []);
+
+  // Закрытие snackbar (мемоизация)
+  const handleCloseSnackbar = useCallback(() => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  }, []);
 
   // Функция для получения цвета карточки на основе типа и дней до события
-  const getCardStyle = (reminder) => {
+  const getCardStyle = useCallback((reminder) => {
     const daysUntil = getDaysUntil(reminder.date);
     const isUrgent = daysUntil <= 3;
     const isSoon = daysUntil <= 7;
@@ -191,11 +279,110 @@ const ReminderList = () => {
           : '0 8px 20px rgba(245, 124, 0, 0.2)'
       };
     }
+  }, []);
+
+  // Фильтрация по группе и сортировка ремайндеров (мемоизированный расчет)
+  const filteredAndSortedReminders = useMemo(() => {
+    return [...reminders]
+      .filter(reminder => selectedGroup === 'all' || reminder.group === selectedGroup)
+      .sort((a, b) => {
+        if (sortType === 'date') {
+          const daysA = getDaysUntil(a.date);
+          const daysB = getDaysUntil(b.date);
+          return daysA - daysB;
+        } else {
+          return a.title.localeCompare(b.title);
+        }
+      });
+  }, [reminders, selectedGroup, sortType]);
+
+  // Группируем напоминания и подготавливаем для виртуализации
+  const groupedItems = useMemo(() => {
+    if (!filteredAndSortedReminders || filteredAndSortedReminders.length === 0) return [];
+    const groups = groupRemindersByTime(filteredAndSortedReminders);
+    return prepareItemsForVirtualList(groups);
+  }, [filteredAndSortedReminders]);
+  
+  // Рендерер для виртуализированного списка
+  const ItemRenderer = ({ index, style }) => {
+    const item = groupedItems[index];
+    
+    if (item.type === 'header') {
+      return (
+        <Box style={style}>
+          <Typography 
+            variant="h6" 
+            component="h2" 
+            sx={{ 
+              mt: 2, 
+              mb: 1, 
+              fontWeight: 'bold',
+              color: item.title === 'Сегодня' ? 'error.main' : 'primary.main'
+            }}
+          >
+            {item.title}
+          </Typography>
+        </Box>
+      );
+    } else if (item.type === 'reminder') {
+      return (
+        <Box style={style}>
+          <ReminderItem 
+            reminder={item.reminder} 
+            onEdit={(id) => navigate(`/edit/${id}`)} 
+            onDelete={(id) => {
+              setReminderToDelete(reminders.find(r => r._id === id));
+              setDeleteDialogOpen(true);
+            }}
+          />
+        </Box>
+      );
+    } else if (item.type === 'divider') {
+      return (
+        <Box style={style}>
+          <Divider sx={{ my: 2 }} />
+        </Box>
+      );
+    }
+    
+    return null;
+  };
+  
+  // Получаем высоту элемента в зависимости от его типа
+  const getItemHeight = (index) => {
+    const item = groupedItems[index];
+    if (item.type === 'header') return 48;
+    if (item.type === 'divider') return 32;
+    
+    // Для напоминаний высота зависит от наличия описания
+    // (приблизительная оценка)
+    const reminder = item.reminder;
+    const baseHeight = 120; // Базовая высота без описания
+    const descriptionHeight = reminder.description 
+      ? Math.min(80, reminder.description.length / 2) // Приблизительно
+      : 0;
+    
+    return baseHeight + descriptionHeight;
   };
 
   if (loading) {
     return <Loading />;
   }
+
+  // Подсчет напоминаний в каждой группе для бейджа (мемоизированный расчет)
+  const groupCounts = useMemo(() => {
+    return {
+      'семья': reminders.filter(r => r.group === 'семья').length,
+      'работа': reminders.filter(r => r.group === 'работа').length,
+      'друзья': reminders.filter(r => r.group === 'друзья').length,
+      'другое': reminders.filter(r => r.group === 'другое').length
+    };
+  }, [reminders]);
+
+  // Определение пустого состояния (мемоизированный расчет)
+  const isEmpty = useMemo(() => {
+    return filteredAndSortedReminders.length === 0;
+  }, [filteredAndSortedReminders]);
 
   return (
     <Box>
@@ -220,7 +407,66 @@ const ReminderList = () => {
         </Button>
       </Box>
 
-      {sortedReminders.length === 0 ? (
+      {/* Фильтр по группам */}
+      <Box sx={{ mb: 3 }}>
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            mb: 1,
+            color: alpha(theme.palette.text.primary, 0.7)
+          }}
+        >
+          <FilterIcon fontSize="small" sx={{ mr: 0.5 }} />
+          Фильтр по группам:
+        </Typography>
+        <ToggleButtonGroup
+          value={selectedGroup}
+          exclusive
+          onChange={handleGroupChange}
+          aria-label="фильтр групп"
+          size="small"
+          sx={{ 
+            flexWrap: 'wrap',
+            '& .MuiToggleButtonGroup-grouped': {
+              borderRadius: 2,
+              mx: 0.5,
+              mb: 0.5
+            }
+          }}
+        >
+          <ToggleButton value="all" aria-label="все группы">
+            Все
+          </ToggleButton>
+          <ToggleButton value="семья" aria-label="семья">
+            <Badge badgeContent={groupCounts['семья']} color="primary" sx={{ mr: 1 }}>
+              <FamilyIcon sx={{ mr: 0.5 }} />
+            </Badge>
+            Семья
+          </ToggleButton>
+          <ToggleButton value="работа" aria-label="работа">
+            <Badge badgeContent={groupCounts['работа']} color="primary" sx={{ mr: 1 }}>
+              <WorkIcon sx={{ mr: 0.5 }} />
+            </Badge>
+            Работа
+          </ToggleButton>
+          <ToggleButton value="друзья" aria-label="друзья">
+            <Badge badgeContent={groupCounts['друзья']} color="primary" sx={{ mr: 1 }}>
+              <PersonIcon sx={{ mr: 0.5 }} />
+            </Badge>
+            Друзья
+          </ToggleButton>
+          <ToggleButton value="другое" aria-label="другое">
+            <Badge badgeContent={groupCounts['другое']} color="primary" sx={{ mr: 1 }}>
+              <OtherIcon sx={{ mr: 0.5 }} />
+            </Badge>
+            Другое
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
+      {isEmpty ? (
         <Box sx={{ 
           textAlign: 'center', 
           mt: 8,
@@ -231,7 +477,9 @@ const ReminderList = () => {
         }}>
           <CalendarIcon sx={{ fontSize: 60, color: alpha(theme.palette.primary.main, 0.4), mb: 2 }} />
           <Typography variant="h6" color="text.secondary">
-            У вас пока нет напоминаний
+            {selectedGroup === 'all' 
+              ? 'У вас пока нет напоминаний' 
+              : 'В этой группе нет напоминаний'}
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
             Нажмите кнопку "Добавить", чтобы создать новое напоминание
@@ -246,140 +494,18 @@ const ReminderList = () => {
           </Button>
         </Box>
       ) : (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={listVariants}
-        >
-          {sortedReminders.map((reminder, index) => {
-            const daysUntil = getDaysUntil(reminder.date);
-            const cardStyle = getCardStyle(reminder);
-            
-            return (
-              <motion.div 
-                key={reminder._id} 
-                custom={index} 
-                variants={itemVariants}
-                whileHover={{ scale: 1.02 }}
-              >
-                <Card 
-                  sx={{ 
-                    mb: 2.5, 
-                    position: 'relative',
-                    overflow: 'visible',
-                    ...cardStyle
-                  }}
-                >
-                  <CardContent sx={{ color: '#fff', pb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar
-                        sx={{ 
-                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                          color: '#fff',
-                          mr: 1.5 
-                        }}
-                      >
-                        {reminder.type === 'birthday' ? <CakeIcon /> : <EventIcon />}
-                      </Avatar>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" component="div" fontWeight={600} noWrap>
-                          {reminder.title}
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          {formatDate(reminder.date)}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ ml: 1 }}>
-                        <IconButton 
-                          size="small" 
-                          onClick={() => navigate(`/edit/${reminder._id}`)}
-                          aria-label="Редактировать"
-                          sx={{ 
-                            color: 'rgba(255, 255, 255, 0.8)',
-                            bgcolor: 'rgba(255, 255, 255, 0.1)',
-                            backdropFilter: 'blur(4px)',
-                            mr: 1,
-                            '&:hover': { 
-                              bgcolor: 'rgba(255, 255, 255, 0.2)',
-                              color: '#fff'
-                            }
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton 
-                          size="small"
-                          onClick={() => {
-                            setReminderToDelete(reminder);
-                            setDeleteDialogOpen(true);
-                          }}
-                          aria-label="Удалить"
-                          sx={{ 
-                            color: 'rgba(255, 255, 255, 0.8)',
-                            bgcolor: 'rgba(255, 255, 255, 0.1)',
-                            backdropFilter: 'blur(4px)',
-                            '&:hover': { 
-                              bgcolor: 'rgba(255, 255, 255, 0.2)',
-                              color: '#fff'
-                            }
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                    
-                    {reminder.description && (
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          mt: 1, 
-                          mb: 2,
-                          bgcolor: 'rgba(255, 255, 255, 0.1)',
-                          backdropFilter: 'blur(4px)',
-                          p: 1.5,
-                          borderRadius: 2
-                        }}
-                      >
-                        {reminder.description}
-                      </Typography>
-                    )}
-                    
-                    <Box sx={{ 
-                      mt: 1, 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      alignItems: 'center' 
-                    }}>
-                      <Chip
-                        icon={reminder.type === 'birthday' ? <CakeIcon /> : <EventIcon />}
-                        label={reminder.type === 'birthday' ? 'День рождения' : 'Событие'}
-                        size="small"
-                        sx={{ 
-                          bgcolor: 'rgba(255, 255, 255, 0.15)',
-                          backdropFilter: 'blur(4px)',
-                          color: '#fff',
-                          fontWeight: 600
-                        }}
-                      />
-                      <Chip
-                        icon={<TimeIcon />}
-                        label={`${daysUntil} ${plural(daysUntil, 'день', 'дня', 'дней')}`}
-                        size="small"
-                        sx={{ 
-                          bgcolor: 'rgba(255, 255, 255, 0.15)',
-                          backdropFilter: 'blur(4px)',
-                          color: '#fff',
-                          fontWeight: 600
-                        }}
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+        <AutoSizer>
+          {({ height, width }) => (
+            <VirtualList
+              height={height}
+              width={width}
+              itemCount={groupedItems.length}
+              itemSize={(index) => getItemHeight(index)}
+            >
+              {ItemRenderer}
+            </VirtualList>
+          )}
+        </AutoSizer>
       )}
 
       {/* Диалог подтверждения удаления */}

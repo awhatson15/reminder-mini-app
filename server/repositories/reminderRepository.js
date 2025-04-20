@@ -37,6 +37,51 @@ class ReminderRepository {
   }
   
   /**
+   * Найти напоминания по произвольному запросу
+   * @param {Object} queryParams - Параметры запроса
+   * @param {Object} options - Опции запроса (сортировка, пагинация)
+   * @returns {Promise<Array>} Список напоминаний
+   */
+  async findByQuery(queryParams, options = {}) {
+    try {
+      const { sort = { 'date.month': 1, 'date.day': 1 }, skip = 0, limit = 0 } = options;
+      
+      const query = Reminder.find(queryParams);
+      
+      if (sort) {
+        query.sort(sort);
+      }
+      
+      if (skip > 0) {
+        query.skip(skip);
+      }
+      
+      if (limit > 0) {
+        query.limit(limit);
+      }
+      
+      return await query.exec();
+    } catch (error) {
+      logger.error('Ошибка при выполнении произвольного запроса напоминаний:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Получить список уникальных групп пользователя
+   * @param {string} userId - ID пользователя
+   * @returns {Promise<Array>} Список групп
+   */
+  async getDistinctGroups(userId) {
+    try {
+      return await Reminder.distinct('group', { user: userId });
+    } catch (error) {
+      logger.error('Ошибка при получении списка групп пользователя:', error);
+      throw error;
+    }
+  }
+  
+  /**
    * Найти напоминание по ID
    * @param {string} id - ID напоминания
    * @returns {Promise<Object>} Напоминание
@@ -121,6 +166,19 @@ class ReminderRepository {
       return await Reminder.find().populate('user');
     } catch (error) {
       logger.error('Ошибка при получении предстоящих напоминаний:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Получить рекуррентные напоминания
+   * @returns {Promise<Array>} Список напоминаний
+   */
+  async getRecurringReminders() {
+    try {
+      return await Reminder.find({ isRecurring: true }).populate('user');
+    } catch (error) {
+      logger.error('Ошибка при получении рекуррентных напоминаний:', error);
       throw error;
     }
   }

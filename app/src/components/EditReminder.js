@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -25,7 +25,17 @@ import {
   Grow,
   InputAdornment,
   Tooltip,
-  Skeleton
+  Switch,
+  IconButton,
+  Card,
+  CardContent,
+  Skeleton,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormLabel
 } from '@mui/material';
 import {
   Cake as CakeIcon,
@@ -35,71 +45,129 @@ import {
   Notifications as NotificationsIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  Edit as EditIcon,
   Title as TitleIcon,
-  Edit as EditIcon
+  Repeat as RepeatIcon,
+  WorkOutline as WorkIcon,
+  FamilyRestroom as FamilyIcon,
+  Person as PersonIcon,
+  MoreHoriz as OtherIcon,
+  ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
+  InfoOutlined as InfoIcon,
+  EventRepeat as RecurringIcon
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
 import axios from 'axios';
 import { UserContext } from '../App';
-import { getFormattedDateFromReminder } from '../utils/dateUtils';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { motion } from 'framer-motion';
 import Toast from './Toast';
+import Loading from './Loading';
+import { format, addDays } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import ConfirmDialog from './ConfirmDialog';
 
 const EditReminder = () => {
   const { user } = useContext(UserContext);
-  const { id } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { id } = useParams();
   
   // Состояния для формы
   const [title, setTitle] = useState('');
   const [type, setType] = useState('birthday');
   const [day, setDay] = useState('');
   const [month, setMonth] = useState('');
-  const [year, setYear] = useState(dayjs().year().toString());
+  const [year, setYear] = useState(new Date().getFullYear().toString());
   const [includeYear, setIncludeYear] = useState(false);
   const [description, setDescription] = useState('');
   const [notifyDaysBefore, setNotifyDaysBefore] = useState(1);
   
+  // Новые состояния для групп и повторяющихся напоминаний
+  const [group, setGroup] = useState('другое');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringType, setRecurringType] = useState('weekly');
+  const [recurringDayOfWeek, setRecurringDayOfWeek] = useState('1'); // Понедельник по умолчанию
+  const [endDate, setEndDate] = useState('');
+  const [originalIsRecurring, setOriginalIsRecurring] = useState(false); // Для сравнения с исходным значением
+  
   // Состояния для валидации и загрузки
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [fetchingReminder, setFetchingReminder] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   
-  // Загрузка данных напоминания
+  // Горячие клавиши для сохранения
+  useHotkeys('ctrl+s, cmd+s', (e) => {
+    e.preventDefault();
+    document.getElementById('save-btn')?.click();
+  });
+  
+  // Получение данных напоминания
   useEffect(() => {
     const fetchReminder = async () => {
       try {
+        setFetchingReminder(true);
         const response = await axios.get(`/api/reminders/${id}`);
         const reminder = response.data;
         
-        setTitle(reminder.title);
-        setType(reminder.type);
-        setDay(reminder.date.day.toString());
-        setMonth(reminder.date.month.toString());
+        setTitle(reminder.title || '');
+        setType(reminder.type || 'birthday');
+        setDay(reminder.date.day?.toString() || '');
+        setMonth(reminder.date.month?.toString() || '');
         
-        // Устанавливаем год и флаг включения года
-        if (reminder.date.year) {
-          setYear(reminder.date.year.toString());
-          setIncludeYear(reminder.type === 'birthday');
+        // Обработка года в зависимости от типа
+        if (reminder.type === 'birthday') {
+          if (reminder.date.year) {
+            setYear(reminder.date.year.toString());
+            setIncludeYear(true);
+          } else {
+            setYear(new Date().getFullYear().toString());
+            setIncludeYear(false);
+          }
         } else {
-          setYear(dayjs().year().toString());
-          setIncludeYear(false);
+          setYear(reminder.date.year?.toString() || new Date().getFullYear().toString());
         }
         
         setDescription(reminder.description || '');
-        setNotifyDaysBefore(reminder.notifyDaysBefore);
-        setInitialLoading(false);
+        setNotifyDaysBefore(reminder.notifyDaysBefore || 1);
+        
+        // Загрузка данных для группы и повторяющихся напоминаний
+        setGroup(reminder.group || 'другое');
+        
+        // Установка данных о повторяющихся напоминаниях
+        setIsRecurring(!!reminder.isRecurring);
+        setOriginalIsRecurring(!!reminder.isRecurring);
+        
+        if (reminder.isRecurring) {
+          setRecurringType(reminder.recurringType || 'weekly');
+          
+          if (reminder.recurringType === 'weekly' && reminder.recurringDayOfWeek !== undefined) {
+            setRecurringDayOfWeek(reminder.recurringDayOfWeek.toString());
+          }
+          
+          if (reminder.endDate) {
+            // Форматируем дату в формат YYYY-MM-DD для поля типа date
+            const endDateObj = new Date(reminder.endDate);
+            const formattedDate = endDateObj.toISOString().split('T')[0];
+            setEndDate(formattedDate);
+          }
+        }
       } catch (error) {
-        console.error('Ошибка при загрузке напоминания:', error);
+        console.error('Ошибка при получении напоминания:', error);
+        if (error.response && error.response.status === 404) {
+          setNotFound(true);
+        }
         setSnackbar({
           open: true,
-          message: 'Не удалось загрузить напоминание',
+          message: 'Ошибка при получении напоминания',
           severity: 'error'
         });
-        setInitialLoading(false);
+      } finally {
+        setFetchingReminder(false);
       }
     };
     
@@ -128,6 +196,17 @@ const EditReminder = () => {
       newErrors.year = 'Для события необходимо указать год';
     }
     
+    // Валидация полей для повторяющихся напоминаний
+    if (isRecurring) {
+      if (recurringType === 'weekly' && (!recurringDayOfWeek || recurringDayOfWeek < 0 || recurringDayOfWeek > 6)) {
+        newErrors.recurringDayOfWeek = 'Выберите день недели (0-6)';
+      }
+      
+      if (!endDate) {
+        newErrors.endDate = 'Укажите дату окончания';
+      }
+    }
+    
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -147,15 +226,34 @@ const EditReminder = () => {
         dateData.year = parseInt(year, 10);
       }
       
-      // Отправка запроса
-      await axios.put(`/api/reminders/${id}`, {
-        telegramId: user.telegramId,
+      // Базовые данные для запроса
+      const reminderData = {
         title: title.trim(),
         type,
         date: dateData,
         description: description.trim(),
-        notifyDaysBefore
-      });
+        notifyDaysBefore,
+        group // Добавляем группу
+      };
+      
+      // Добавляем поля для повторяющихся напоминаний
+      if (isRecurring) {
+        reminderData.isRecurring = true;
+        reminderData.recurringType = recurringType;
+        
+        if (recurringType === 'weekly') {
+          reminderData.recurringDayOfWeek = parseInt(recurringDayOfWeek, 10);
+        }
+        
+        reminderData.endDate = endDate;
+      } else if (originalIsRecurring) {
+        // Если напоминание было повторяющимся, но пользователь отключил повторение,
+        // явно указываем, что это больше не повторяющееся напоминание
+        reminderData.isRecurring = false;
+      }
+      
+      // Отправка запроса
+      await axios.put(`/api/reminders/${id}`, reminderData);
       
       setSnackbar({
         open: true,
@@ -184,6 +282,20 @@ const EditReminder = () => {
     }
   };
   
+  // Получение соответствующей иконки для группы
+  const getGroupIcon = (groupName) => {
+    switch (groupName) {
+      case 'семья':
+        return <FamilyIcon />;
+      case 'работа':
+        return <WorkIcon />;
+      case 'друзья':
+        return <PersonIcon />;
+      default:
+        return <OtherIcon />;
+    }
+  };
+  
   // Обработчик закрытия snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -200,343 +312,424 @@ const EditReminder = () => {
     }
   };
   
-  // Показываем скелетоны при начальной загрузке
-  if (initialLoading) {
+  // Обработчик изменения статуса повторения
+  const handleRecurringChange = (e) => {
+    setIsRecurring(e.target.checked);
+    if (!e.target.checked) {
+      setErrors({...errors, recurringDayOfWeek: undefined, endDate: undefined});
+    }
+  };
+  
+  // Получение дней недели
+  const getDayOfWeekName = (dayNumber) => {
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    return days[dayNumber];
+  };
+  
+  // Обработчик удаления напоминания
+  const handleDelete = async () => {
+    setLoading(true);
+    
+    try {
+      await axios.delete(`/api/reminders/${id}`);
+      setSnackbar({
+        open: true,
+        message: 'Напоминание успешно удалено',
+        severity: 'success'
+      });
+      
+      // Перенаправление на список после успешного удаления
+      setTimeout(() => navigate('/'), 1500);
+    } catch (error) {
+      console.error('Ошибка при удалении напоминания:', error);
+      setSnackbar({
+        open: true,
+        message: 'Ошибка при удалении напоминания',
+        severity: 'error'
+      });
+      setLoading(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+  
+  if (notFound) {
     return (
-      <Box>
-        <Typography variant="h5" component="h1" sx={{ mb: 3, fontWeight: 600 }}>
-          <Skeleton width={300} />
+      <Box textAlign="center" py={5}>
+        <Typography variant="h5" mb={3}>
+          Напоминание не найдено
         </Typography>
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            borderRadius: 4,
-            background: alpha(theme.palette.primary.main, 0.04),
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-            mb: 3
-          }}
+        <Button 
+          variant="contained" 
+          onClick={() => navigate('/')}
         >
-          <Stack spacing={3}>
-            <Skeleton variant="rounded" height={56} />
-            <Skeleton variant="rounded" height={100} />
-            <Skeleton variant="rounded" height={56} />
-            <Skeleton variant="rounded" height={56} />
-            <Skeleton variant="rounded" height={100} />
-            <Skeleton variant="rounded" height={56} />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Skeleton variant="rounded" height={56} width="50%" />
-              <Skeleton variant="rounded" height={56} width="50%" />
-            </Box>
-          </Stack>
-        </Paper>
+          Вернуться на главную
+        </Button>
+      </Box>
+    );
+  }
+  
+  if (fetchingReminder) {
+    return (
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        minHeight="50vh"
+        flexDirection="column"
+        gap={2}
+      >
+        <CircularProgress size={50} />
+        <Typography>Загрузка напоминания...</Typography>
       </Box>
     );
   }
   
   return (
-    <Box>
-      <Typography 
-        variant="h5" 
-        component="h1" 
-        sx={{ 
-          mb: 3, 
-          fontWeight: 600,
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Box 
+        component="form" 
+        onSubmit={handleSubmit} 
+        sx={{ maxWidth: 800, margin: '0 auto' }}
+      >
+        <Box sx={{ 
           display: 'flex',
           alignItems: 'center',
-          gap: 1
-        }}
-      >
-        <EditIcon fontSize="large" color="primary" />
-        Изменить напоминание
-      </Typography>
-      
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 3, 
-          borderRadius: 4,
-          background: alpha(theme.palette.primary.main, 0.04),
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-          mb: 3
-        }}
-      >
-        <form onSubmit={handleSubmit}>
-          <Stack spacing={3}>
+          mb: 4
+        }}>
+          <IconButton 
+            onClick={() => navigate('/')}
+            sx={{ mr: 2 }}
+            aria-label="Назад"
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h5" component="h1" fontWeight="600">
+            Редактирование напоминания
+          </Typography>
+        </Box>
+        
+        {/* Тип напоминания */}
+        <Card sx={{ 
+          mb: 3,
+          borderRadius: 3,
+          boxShadow: theme.shadows[2]
+        }}>
+          <CardContent>
+            <Typography 
+              variant="subtitle1" 
+              component="h2" 
+              fontWeight="600" 
+              gutterBottom
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                mb: 2
+              }}
+            >
+              <EventIcon sx={{ mr: 1 }} />
+              Тип напоминания
+            </Typography>
+            
+            <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
+              <InputLabel id="type-label">Тип напоминания</InputLabel>
+              <Select
+                labelId="type-label"
+                value={type}
+                onChange={handleTypeChange}
+                label="Тип напоминания"
+                disabled={loading}
+              >
+                <MenuItem value="event">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <EventIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                    Событие
+                  </Box>
+                </MenuItem>
+                <MenuItem value="birthday">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CakeIcon sx={{ mr: 1, color: theme.palette.secondary.main }} />
+                    День рождения
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+            
+            <FormControl fullWidth variant="outlined">
+              <InputLabel id="group-label">Группа</InputLabel>
+              <Select
+                labelId="group-label"
+                value={group}
+                onChange={(e) => setGroup(e.target.value)}
+                label="Группа"
+                disabled={loading}
+              >
+                <MenuItem value="семья">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FamilyIcon sx={{ mr: 1, color: theme.palette.info.main }} />
+                    Семья
+                  </Box>
+                </MenuItem>
+                <MenuItem value="работа">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <WorkIcon sx={{ mr: 1, color: theme.palette.warning.main }} />
+                    Работа
+                  </Box>
+                </MenuItem>
+                <MenuItem value="друзья">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <PersonIcon sx={{ mr: 1, color: theme.palette.success.main }} />
+                    Друзья
+                  </Box>
+                </MenuItem>
+                <MenuItem value="другое">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <OtherIcon sx={{ mr: 1, color: theme.palette.grey[600] }} />
+                    Другое
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </CardContent>
+        </Card>
+        
+        {/* Детали напоминания */}
+        <Card sx={{ 
+          mb: 3,
+          borderRadius: 3,
+          boxShadow: theme.shadows[2]
+        }}>
+          <CardContent>
+            <Typography 
+              variant="subtitle1" 
+              component="h2" 
+              fontWeight="600" 
+              gutterBottom
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                mb: 2
+              }}
+            >
+              <InfoIcon sx={{ mr: 1 }} />
+              Детали напоминания
+            </Typography>
+            
             <TextField
-              label="Название события или имя человека"
+              label="Название"
+              variant="outlined"
               fullWidth
+              required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               error={!!errors.title}
               helperText={errors.title}
               disabled={loading}
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <TitleIcon color="primary" />
-                  </InputAdornment>
-                ),
-              }}
+              sx={{ mb: 3 }}
             />
-            
-            <Box sx={{ 
-              p: 2, 
-              borderRadius: 3,
-              bgcolor: alpha(
-                type === 'birthday' 
-                  ? theme.palette.primary.main 
-                  : theme.palette.secondary.main, 
-                0.08
-              ),
-              border: `1px solid ${alpha(
-                type === 'birthday' 
-                  ? theme.palette.primary.main 
-                  : theme.palette.secondary.main,
-                0.15
-              )}`,
-            }}>
-              <Typography 
-                variant="subtitle1" 
-                gutterBottom 
-                fontWeight={600}
-                sx={{ mb: 2 }}
-              >
-                Тип напоминания
-              </Typography>
-              
-              <RadioGroup
-                row
-                value={type}
-                onChange={handleTypeChange}
-              >
-                <FormControlLabel 
-                  value="birthday" 
-                  control={
-                    <Radio 
-                      sx={{
-                        '&.Mui-checked': {
-                          color: theme.palette.primary.main
-                        }
-                      }}
-                    />
-                  } 
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CakeIcon color={type === 'birthday' ? 'primary' : 'inherit'} />
-                      <Typography>День рождения</Typography>
-                    </Box>
-                  }
-                  disabled={loading}
-                  sx={{ mr: 3 }}
-                />
-                <FormControlLabel 
-                  value="event" 
-                  control={
-                    <Radio 
-                      sx={{
-                        '&.Mui-checked': {
-                          color: theme.palette.secondary.main
-                        }
-                      }}
-                    />
-                  } 
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <EventIcon color={type === 'event' ? 'secondary' : 'inherit'} />
-                      <Typography>Событие/мероприятие</Typography>
-                    </Box>
-                  }
-                  disabled={loading}
-                />
-              </RadioGroup>
-            </Box>
-            
-            <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-              Дата
-            </Typography>
-            
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="День"
-                type="number"
-                value={day}
-                onChange={(e) => setDay(e.target.value)}
-                inputProps={{ min: 1, max: 31 }}
-                error={!!errors.day}
-                helperText={errors.day}
-                disabled={loading}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <CalendarIcon fontSize="small" color="primary" />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ minWidth: 120, flex: 1 }}
-              />
-              
-              <TextField
-                label="Месяц"
-                type="number"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                inputProps={{ min: 1, max: 12 }}
-                error={!!errors.month}
-                helperText={errors.month}
-                disabled={loading}
-                required
-                sx={{ minWidth: 120, flex: 1 }}
-              />
-            </Box>
-            
-            {/* Показываем поле для года для обычных событий обязательно */}
-            {type === 'event' ? (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <TextField
-                  label="Год"
-                  type="number"
-                  fullWidth
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  error={!!errors.year}
-                  helperText={errors.year}
-                  disabled={loading}
-                  required
-                />
-              </motion.div>
-            ) : (
-              /* Для дней рождения показываем опцию добавить год */
-              <Box sx={{ 
-                p: 2, 
-                borderRadius: 3,
-                bgcolor: alpha(theme.palette.primary.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-              }}>
-                <Typography variant="subtitle2" mb={1} fontWeight={500}>
-                  Укажите год рождения (не обязательно)
-                </Typography>
-                <RadioGroup
-                  row
-                  value={includeYear ? "yes" : "no"}
-                  onChange={(e) => setIncludeYear(e.target.value === "yes")}
-                >
-                  <FormControlLabel
-                    value="no"
-                    control={<Radio size="small" />}
-                    label="Без указания года" 
-                  />
-                  <FormControlLabel
-                    value="yes"
-                    control={<Radio size="small" />}
-                    label="С указанием года" 
-                  />
-                </RadioGroup>
-                <Grow in={includeYear}>
-                  <Box sx={{ mt: 2, display: includeYear ? 'block' : 'none' }}>
-                    <TextField
-                      label="Год рождения"
-                      type="number"
-                      fullWidth
-                      value={year}
-                      onChange={(e) => setYear(e.target.value)}
-                      size="small"
-                    />
-                  </Box>
-                </Grow>
-              </Box>
-            )}
             
             <TextField
               label="Описание (необязательно)"
+              variant="outlined"
               fullWidth
               multiline
-              rows={3}
+              rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              error={!!errors.description}
+              helperText={errors.description || 'Добавьте дополнительные сведения о напоминании'}
+              disabled={loading}
+              sx={{ mb: 3 }}
+            />
+            
+            <TextField
+              label="Дата"
+              type="date"
+              fullWidth
+              required
+              value={format(new Date(year, month - 1, day), 'yyyy-MM-dd')}
+              onChange={(e) => {
+                const [year, month, day] = e.target.value.split('-');
+                setYear(year);
+                setMonth(month);
+                setDay(day);
+              }}
+              error={!!errors.date}
+              helperText={errors.date}
+              InputLabelProps={{ shrink: true }}
               disabled={loading}
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start" sx={{ mt: 1 }}>
-                    <DescriptionIcon color="primary" />
-                  </InputAdornment>
+                  <CalendarIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
                 ),
               }}
             />
+          </CardContent>
+        </Card>
+        
+        {/* Настройки повторения */}
+        <Card sx={{ 
+          mb: 4,
+          borderRadius: 3,
+          boxShadow: theme.shadows[2]
+        }}>
+          <CardContent>
+            <Typography 
+              variant="subtitle1" 
+              component="h2" 
+              fontWeight="600" 
+              gutterBottom
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                mb: 2
+              }}
+            >
+              <RepeatIcon sx={{ mr: 1 }} />
+              Настройки повторения
+            </Typography>
             
-            <FormControl fullWidth>
-              <InputLabel>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <NotificationsIcon fontSize="small" />
-                  Напомнить за
-                </Box>
-              </InputLabel>
-              <Select
-                value={notifyDaysBefore}
-                onChange={(e) => setNotifyDaysBefore(e.target.value)}
-                label="Напомнить за"
-                disabled={loading}
-              >
-                <MenuItem value={0}>В день события</MenuItem>
-                <MenuItem value={1}>За 1 день</MenuItem>
-                <MenuItem value={2}>За 2 дня</MenuItem>
-                <MenuItem value={3}>За 3 дня</MenuItem>
-                <MenuItem value={7}>За неделю</MenuItem>
-                <MenuItem value={14}>За 2 недели</MenuItem>
-                <MenuItem value={30}>За месяц</MenuItem>
-              </Select>
-              <FormHelperText>
-                За сколько дней напомнить о событии
-              </FormHelperText>
-            </FormControl>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isRecurring}
+                  onChange={handleRecurringChange}
+                  disabled={loading}
+                  color="primary"
+                />
+              }
+              label="Повторяющееся напоминание"
+              sx={{ mb: 2 }}
+            />
             
-            <Divider />
+            {isRecurring && (
+              <FormControl component="fieldset" sx={{ ml: 3 }}>
+                <FormLabel component="legend">Частота повторения</FormLabel>
+                <RadioGroup
+                  value={recurringType}
+                  onChange={(e) => setRecurringType(e.target.value)}
+                >
+                  <FormControlLabel
+                    value="weekly"
+                    control={<Radio disabled={loading} />}
+                    label="Еженедельно"
+                  />
+                  <FormControlLabel
+                    value="monthly"
+                    control={<Radio disabled={loading} />}
+                    label="Ежемесячно"
+                  />
+                  <FormControlLabel
+                    value="yearly"
+                    control={<Radio disabled={loading} />}
+                    label="Ежегодно"
+                  />
+                </RadioGroup>
+              </FormControl>
+            )}
             
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate('/')}
-                disabled={loading}
-                fullWidth
-                startIcon={<CancelIcon />}
-                size="large"
-              >
-                Отмена
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={loading}
-                fullWidth
-                startIcon={loading ? null : <SaveIcon />}
-                size="large"
-              >
-                {loading ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  'Сохранить'
-                )}
-              </Button>
-            </Box>
-          </Stack>
-        </form>
-      </Paper>
-      
-      <Toast 
-        open={snackbar.open}
-        onClose={handleCloseSnackbar}
-        message={snackbar.message}
-        severity={snackbar.severity}
-      />
-    </Box>
+            {isRecurring && (
+              <Box sx={{ 
+                bgcolor: alpha(theme.palette.info.light, 0.1),
+                borderLeft: `4px solid ${theme.palette.info.main}`,
+                p: 2,
+                mt: 2,
+                borderRadius: 1
+              }}>
+                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <InfoIcon sx={{ mr: 1, fontSize: 16, mt: 0.5, color: theme.palette.info.main }} />
+                  При изменении даты повторяющегося напоминания будут изменены все будущие напоминания этой серии.
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Кнопки управления */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          mb: 4
+        }}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => setConfirmOpen(true)}
+            disabled={loading}
+            startIcon={<DeleteIcon />}
+            sx={{ borderRadius: 2 }}
+          >
+            Удалить
+          </Button>
+          
+          <Box>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/')}
+              disabled={loading}
+              startIcon={<CancelIcon />}
+              sx={{ mr: 2, borderRadius: 2 }}
+            >
+              Отмена
+            </Button>
+            
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+              startIcon={<SaveIcon />}
+              sx={{ borderRadius: 2 }}
+            >
+              {loading ? 'Сохранение...' : 'Сохранить'}
+            </Button>
+          </Box>
+        </Box>
+        
+        {/* Диалог подтверждения удаления */}
+        <Dialog
+          open={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+        >
+          <DialogTitle>
+            Подтверждение удаления
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Вы уверены, что хотите удалить это напоминание? Это действие невозможно отменить.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setConfirmOpen(false)} 
+              disabled={loading}
+            >
+              Отмена
+            </Button>
+            <Button 
+              onClick={handleDelete} 
+              color="error"
+              disabled={loading}
+              variant="contained"
+            >
+              {loading ? 'Удаление...' : 'Удалить'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        
+        {/* Уведомление */}
+        <Toast 
+          open={snackbar.open} 
+          onClose={handleCloseSnackbar}
+          message={snackbar.message}
+          severity={snackbar.severity}
+        />
+      </Box>
+    </motion.div>
   );
 };
 

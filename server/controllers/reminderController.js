@@ -9,7 +9,7 @@ const { logger } = require('../utils/logger');
  */
 const getUserReminders = async (req, res, next) => {
   try {
-    const { telegramId, page, limit, sortBy, sortDir } = req.query;
+    const { telegramId, page, limit, sortBy, sortDir, group } = req.query;
     
     if (!telegramId) {
       return res.status(400).json({ message: 'Telegram ID обязателен' });
@@ -34,12 +34,44 @@ const getUserReminders = async (req, res, next) => {
       }
     }
     
-    const reminders = await reminderService.getUserReminders(parseInt(telegramId), options);
+    let reminders;
     
-    logger.info(`Получены напоминания для пользователя ${telegramId}`);
+    // Фильтрация по группе, если задана
+    if (group) {
+      reminders = await reminderService.getRemindersByGroup(parseInt(telegramId), group, options);
+      logger.info(`Получены напоминания группы ${group} для пользователя ${telegramId}`);
+    } else {
+      reminders = await reminderService.getUserReminders(parseInt(telegramId), options);
+      logger.info(`Получены все напоминания для пользователя ${telegramId}`);
+    }
+    
     res.json(reminders);
   } catch (error) {
     logger.error('Ошибка при получении напоминаний:', error);
+    next(error);
+  }
+};
+
+/**
+ * Получить список групп пользователя
+ * @param {Object} req - HTTP запрос
+ * @param {Object} res - HTTP ответ
+ * @param {Function} next - Следующий middleware
+ */
+const getUserGroups = async (req, res, next) => {
+  try {
+    const { telegramId } = req.params;
+    
+    if (!telegramId) {
+      return res.status(400).json({ message: 'Telegram ID обязателен' });
+    }
+    
+    const groups = await reminderService.getUserGroups(parseInt(telegramId));
+    
+    logger.info(`Получены группы для пользователя ${telegramId}`);
+    res.json(groups);
+  } catch (error) {
+    logger.error(`Ошибка при получении групп пользователя ${req.params.telegramId}:`, error);
     next(error);
   }
 };
@@ -131,5 +163,6 @@ module.exports = {
   getReminderById,
   createReminder,
   updateReminder,
-  deleteReminder
+  deleteReminder,
+  getUserGroups
 }; 

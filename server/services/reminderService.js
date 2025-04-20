@@ -1,6 +1,7 @@
 const reminderRepository = require('../repositories/reminderRepository');
 const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
+const { validateRequiredFields, validateFieldTypes } = require('../middlewares/validation');
 
 /**
  * Сервис для работы с напоминаниями
@@ -23,6 +24,50 @@ class ReminderService {
       return await reminderRepository.findByUserId(user._id, options);
     } catch (error) {
       logger.error(`Ошибка при получении напоминаний пользователя ${telegramId}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Получить напоминания пользователя по группе
+   * @param {number} telegramId - Telegram ID пользователя
+   * @param {string} group - Название группы
+   * @param {Object} options - Опции запроса (сортировка, пагинация)
+   * @returns {Promise<Array>} Список напоминаний
+   */
+  async getRemindersByGroup(telegramId, group, options = {}) {
+    try {
+      const user = await userRepository.findByTelegramId(telegramId);
+      
+      if (!user) {
+        throw new Error(`Пользователь с Telegram ID ${telegramId} не найден`);
+      }
+      
+      const query = { user: user._id, group };
+      return await reminderRepository.findByQuery(query, options);
+    } catch (error) {
+      logger.error(`Ошибка при получении напоминаний по группе ${group} для пользователя ${telegramId}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Получить список доступных групп для пользователя
+   * @param {number} telegramId - Telegram ID пользователя
+   * @returns {Promise<Array>} Список групп
+   */
+  async getUserGroups(telegramId) {
+    try {
+      const user = await userRepository.findByTelegramId(telegramId);
+      
+      if (!user) {
+        throw new Error(`Пользователь с Telegram ID ${telegramId} не найден`);
+      }
+      
+      const result = await reminderRepository.getDistinctGroups(user._id);
+      return result;
+    } catch (error) {
+      logger.error(`Ошибка при получении групп пользователя ${telegramId}:`, error);
       throw error;
     }
   }
@@ -142,35 +187,93 @@ class ReminderService {
    * @private
    */
   _validateReminderData(data, isCreation = true) {
+    const errors = [];
+    
     // Проверка обязательных полей при создании
     if (isCreation) {
-      if (!data.title) {
-        throw new Error('Необходимо указать заголовок');
-      }
+      errors.push(...validateRequiredFields(data, ['title', 'type', 'date']));
       
-      if (!data.type || (data.type !== 'birthday' && data.type !== 'event')) {
-        throw new Error('Необходимо указать корректный тип');
-      }
-      
-      if (!data.date) {
-        throw new Error('Необходимо указать дату');
+      // Проверка типа напоминания
+      if (data.type && !['birthday', 'event'].includes(data.type)) {
+        errors.push('Поле type должно быть "birthday" или "event"');
       }
     }
     
-    // Проверка даты, если она указана
+    // Проверка типов полей
+    const fieldTypes = {
+      title: 'string',
+      type: ['birthday', 'event'],
+      group: ['семья', 'работа', 'друзья', 'другое'],
+      description: 'string',
+      notifyDaysBefore: 'number',
+      isRecurring: 'boolean',
+      recurringType: ['weekly', 'monthly', 'yearly'],
+      recurringDayOfWeek: 'number',
+      endDate: 'string' // Дата в формате строки
+    };
+    
+    errors.push(...validateFieldTypes(data, fieldTypes));
+    
+    // Проверка полей даты
     if (data.date) {
-      if (typeof data.date.day !== 'number' || data.date.day < 1 || data.date.day > 31) {
-        throw new Error('Необходимо указать корректный день месяца (1-31)');
+      // Проверка обязательных полей даты
+      errors.push(...validateRequiredFields(data.date, ['day', 'month']));
+      
+      // Проверка типов полей даты
+      const dateFieldTypes = {
+        day: 'number',
+        month: 'number',
+        year: 'number'
+      };
+      
+      errors.push(...validateFieldTypes(data.date, dateFieldTypes));
+      
+      // Проверка значений полей даты
+      if (data.date.day !== undefined) {
+        if (data.date.day < 1 || data.date.day > 31) {
+          errors.push('Поле date.day должно быть от 1 до 31');
+        }
       }
       
-      if (typeof data.date.month !== 'number' || data.date.month < 1 || data.date.month > 12) {
-        throw new Error('Необходимо указать корректный месяц (1-12)');
+      if (data.date.month !== undefined) {
+        if (data.date.month < 1 || data.date.month > 12) {
+          errors.push('Поле date.month должно быть от 1 до 12');
+        }
       }
       
-      // Проверка года для событий (не дней рождения)
+      // Проверка года для событий
       if (data.type === 'event' && !data.date.year) {
-        throw new Error('Для событий необходимо указать год');
+        errors.push('Для событий необходимо указать год (date.year)');
       }
+    }
+    
+    // Проверка полей рекуррентных напоминаний
+    if (data.isRecurring) {
+      if (!data.recurringType) {
+        errors.push('Для рекуррентного напоминания необходимо указать тип повторения (recurringType)');
+      } else if (data.recurringType === 'weekly' && data.recurringDayOfWeek === undefined) {
+        errors.push('Для еженедельного напоминания необходимо указать день недели (recurringDayOfWeek)');
+      }
+      
+      // Проверка корректности дня недели
+      if (data.recurringDayOfWeek !== undefined) {
+        if (data.recurringDayOfWeek < 0 || data.recurringDayOfWeek > 6) {
+          errors.push('День недели (recurringDayOfWeek) должен быть от 0 до 6');
+        }
+      }
+      
+      // Проверка даты окончания, если она указана
+      if (data.endDate) {
+        const endDate = new Date(data.endDate);
+        if (isNaN(endDate.getTime())) {
+          errors.push('Указана некорректная дата окончания (endDate)');
+        }
+      }
+    }
+    
+    // Если есть ошибки, выбрасываем исключение
+    if (errors.length > 0) {
+      throw new Error(`Ошибка валидации данных: ${errors.join('; ')}`);
     }
   }
 }

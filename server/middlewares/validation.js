@@ -127,8 +127,13 @@ const validateReminder = (isCreation = true) => {
       telegramId: 'number',
       title: 'string',
       type: ['birthday', 'event'],
+      group: ['семья', 'работа', 'друзья', 'другое'],
       description: 'string',
-      notifyDaysBefore: 'number'
+      notifyDaysBefore: 'number',
+      isRecurring: 'boolean',
+      recurringType: ['weekly', 'monthly', 'yearly'],
+      recurringDayOfWeek: 'number',
+      endDate: 'string' // Дата в формате строки
     };
     
     if (reminderData.telegramId && typeof reminderData.telegramId === 'string') {
@@ -171,6 +176,30 @@ const validateReminder = (isCreation = true) => {
       // Проверка года для событий
       if (reminderData.type === 'event' && !reminderData.date.year) {
         errors.push('Для событий необходимо указать год (date.year)');
+      }
+    }
+    
+    // Проверка полей рекуррентных напоминаний
+    if (reminderData.isRecurring) {
+      if (!reminderData.recurringType) {
+        errors.push('Для рекуррентного напоминания необходимо указать тип повторения (recurringType)');
+      } else if (reminderData.recurringType === 'weekly' && reminderData.recurringDayOfWeek === undefined) {
+        errors.push('Для еженедельного напоминания необходимо указать день недели (recurringDayOfWeek)');
+      }
+      
+      // Проверка корректности дня недели
+      if (reminderData.recurringDayOfWeek !== undefined) {
+        if (reminderData.recurringDayOfWeek < 0 || reminderData.recurringDayOfWeek > 6) {
+          errors.push('День недели (recurringDayOfWeek) должен быть от 0 до 6');
+        }
+      }
+      
+      // Проверка даты окончания, если она указана
+      if (reminderData.endDate) {
+        const endDate = new Date(reminderData.endDate);
+        if (isNaN(endDate.getTime())) {
+          errors.push('Указана некорректная дата окончания (endDate)');
+        }
       }
     }
     

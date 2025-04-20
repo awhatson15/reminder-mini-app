@@ -16,6 +16,11 @@ const reminderSchema = new mongoose.Schema({
     enum: ['birthday', 'event'],
     required: true
   },
+  group: {
+    type: String,
+    enum: ['семья', 'работа', 'друзья', 'другое'],
+    default: 'другое'
+  },
   date: {
     day: {
       type: Number,
@@ -50,6 +55,30 @@ const reminderSchema = new mongoose.Schema({
     default: 1,
     min: 0
   },
+  // Поля для рекуррентных напоминаний
+  isRecurring: {
+    type: Boolean,
+    default: false
+  },
+  recurringType: {
+    type: String,
+    enum: ['weekly', 'monthly', 'yearly'],
+    default: 'monthly'
+  },
+  // Для еженедельных напоминаний - день недели (0-6, где 0 - воскресенье)
+  recurringDayOfWeek: {
+    type: Number,
+    min: 0,
+    max: 6
+  },
+  // Дата последнего срабатывания напоминания
+  lastTriggered: {
+    type: Date
+  },
+  // Дата окончания рекуррентного напоминания (необязательно)
+  endDate: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -70,5 +99,7 @@ reminderSchema.index({ user: 1 });
 reminderSchema.index({ user: 1, 'date.month': 1, 'date.day': 1 });
 reminderSchema.index({ user: 1, title: 1 });
 reminderSchema.index({ user: 1, type: 1 });
+reminderSchema.index({ user: 1, group: 1 });
+reminderSchema.index({ isRecurring: 1, lastTriggered: 1 });
 
 module.exports = mongoose.model('Reminder', reminderSchema); 

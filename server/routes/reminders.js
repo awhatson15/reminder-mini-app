@@ -13,6 +13,9 @@ router.use(rateLimiter({
 // Получить все напоминания пользователя
 router.get('/', reminderController.getUserReminders);
 
+// Получить группы пользователя
+router.get('/groups/:telegramId', reminderController.getUserGroups);
+
 // Создать новое напоминание
 router.post('/', validateReminder(true), reminderController.createReminder);
 

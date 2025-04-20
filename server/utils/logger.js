@@ -22,9 +22,9 @@ const getLogFormat = () => {
   
   // Для разработки используем более подробный формат
   return winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.errors({ stack: true }),
-    winston.format.splat(),
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.errors({ stack: true }),
+  winston.format.splat(),
     winston.format.printf(({ level, message, timestamp, stack, ...rest }) => {
       // Форматируем дополнительные метаданные, если они есть
       let meta = '';
@@ -33,8 +33,8 @@ const getLogFormat = () => {
       }
       
       return `${timestamp} ${level.toUpperCase()}: ${message} ${stack ? '\n' + stack : ''}${meta}`;
-    })
-  );
+  })
+);
 };
 
 // Настройка транспортов логирования
@@ -53,18 +53,18 @@ const getTransports = () => {
   if (process.env.NODE_ENV !== 'test') {
     transports.push(
       // Запись ошибок в отдельный файл
-      new winston.transports.File({ 
-        filename: path.join(logDir, 'error.log'), 
-        level: 'error',
-        maxsize: 10485760, // 10MB
-        maxFiles: 5
-      }),
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'error.log'), 
+      level: 'error',
+      maxsize: 10485760, // 10MB
+      maxFiles: 5
+    }),
       // Запись всех логов в общий файл
-      new winston.transports.File({ 
-        filename: path.join(logDir, 'combined.log'),
-        maxsize: 10485760, // 10MB
-        maxFiles: 5
-      })
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'combined.log'),
+      maxsize: 10485760, // 10MB
+      maxFiles: 5
+    })
     );
   }
   

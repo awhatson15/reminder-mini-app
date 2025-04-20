@@ -383,10 +383,22 @@ const EditReminder = () => {
   
   // Обработчик изменения статуса повторения
   const handleRecurringChange = (e) => {
-    setIsRecurring(e.target.checked);
-    if (!e.target.checked) {
-      setErrors({...errors, recurringDayOfWeek: undefined, endDate: undefined});
+    // Если настройки повторения менялись, показываем диалог подтверждения
+    if (originalIsRecurring && !e.target.checked) {
+      setConfirmOpen(true);
+    } else {
+      setIsRecurring(e.target.checked);
+      if (!e.target.checked) {
+        setErrors({...errors, recurringDayOfWeek: undefined, endDate: undefined});
+      }
     }
+  };
+  
+  // Функция продолжения изменения настроек повторения после подтверждения
+  const continueRecurringChange = () => {
+    setIsRecurring(false);
+    setErrors({...errors, recurringDayOfWeek: undefined, endDate: undefined});
+    setConfirmOpen(false);
   };
   
   // Получение дней недели

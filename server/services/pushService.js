@@ -7,11 +7,15 @@ let firebaseInitialized = false;
 // Инициализация Firebase Admin SDK
 try {
   const serviceAccount = require('../../firebase-service-account.json');
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
-  firebaseInitialized = true;
-  logger.info('Firebase Admin SDK успешно инициализирован');
+  if (Object.keys(serviceAccount).length === 0) {
+    logger.warn('Firebase Admin SDK не инициализирован: пустой файл конфигурации');
+  } else {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    firebaseInitialized = true;
+    logger.info('Firebase Admin SDK успешно инициализирован');
+  }
 } catch (error) {
   logger.warn('Firebase Admin SDK не инициализирован:', error.message);
 }
@@ -55,15 +59,25 @@ const sendPushNotification = async (telegramId, title, body, data = {}) => {
 
 // Отправка напоминания через push-уведомление
 const sendReminderPush = async (telegramId, reminder) => {
-  const title = 'Напоминание';
-  const body = reminder.text;
-  const data = {
-    type: 'reminder',
-    reminderId: reminder._id.toString(),
-    date: reminder.date.toISOString()
-  };
+  if (!firebaseInitialized) {
+    logger.warn(`Напоминание не отправлено пользователю ${telegramId} (Firebase не инициализирован)`);
+    return;
+  }
+  
+  try {
+    const title = 'Напоминание';
+    const body = reminder.text || reminder.title;
+    const data = {
+      type: 'reminder',
+      reminderId: reminder._id.toString(),
+      date: reminder.date instanceof Date ? reminder.date.toISOString() : new Date().toISOString()
+    };
 
-  await sendPushNotification(telegramId, title, body, data);
+    await sendPushNotification(telegramId, title, body, data);
+  } catch (error) {
+    logger.error('Ошибка при отправке push-напоминания:', error);
+    // Не пробрасываем ошибку дальше, чтобы не прерывать основной процесс
+  }
 };
 
 module.exports = {

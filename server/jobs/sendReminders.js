@@ -4,8 +4,13 @@ const userRepository = require('../repositories/userRepository');
 const { logger } = require('../utils/logger');
 const { plural } = require('../utils/textUtils');
 
-// Подключаем бота
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: false });
+// Проверка на наличие токена Telegram
+if (!process.env.BOT_TOKEN) {
+  logger.warn('Не установлен BOT_TOKEN. Напоминания не будут отправляться.');
+}
+
+// Подключаем бота, только если есть токен
+const bot = process.env.BOT_TOKEN ? new TelegramBot(process.env.BOT_TOKEN, { polling: false }) : null;
 
 // Функция форматирования даты
 const formatDate = (date) => {
@@ -130,6 +135,12 @@ const sendReminders = async () => {
     today.setHours(0, 0, 0, 0); // Нормализуем время
     
     logger.info('Запуск проверки предстоящих событий');
+    
+    // Проверяем, настроен ли бот
+    if (!bot) {
+      logger.warn('Бот Telegram не инициализирован. Напоминания не будут отправляться.');
+      return;
+    }
     
     // Получаем всех пользователей
     const users = await userRepository.findAll();

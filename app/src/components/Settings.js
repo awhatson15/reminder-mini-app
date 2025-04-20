@@ -72,34 +72,36 @@ const Settings = () => {
       
       <NeuCard variant="raised" sx={{ mb: 3 }}>
         <List disablePadding>
+          {/* Темная тема */}
           <ListItem>
             <ListItemIcon>
               {isDarkMode ? <DarkModeIcon /> : <LightModeIcon />}
             </ListItemIcon>
-            <ListItemText 
-              primary="Тёмная тема" 
-              secondary={isDarkMode ? "Включена" : "Выключена"} 
-            />
-            <ListItemSecondaryAction>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+              <ListItemText 
+                primary="Тёмная тема" 
+                secondary={isDarkMode ? "Включена" : "Выключена"} 
+                sx={{ mr: 2 }}
+              />
               <NeuSwitch 
-                edge="end"
                 checked={isDarkMode}
                 onChange={toggleTheme}
               />
-            </ListItemSecondaryAction>
+            </Box>
           </ListItem>
           <Divider variant="inset" component="li" />
           
-          {/* Новая опция для выбора начального экрана */}
-          <ListItem sx={{ alignItems: 'flex-start', paddingTop: 1, paddingBottom: 1 }}>
-            <ListItemIcon sx={{ mt: 1 }}>
+          {/* Начальный экран */}
+          <ListItem sx={{ py: 1.5 }}>
+            <ListItemIcon>
               <HomeIcon />
             </ListItemIcon>
-            <ListItemText 
-              primary="Начальный экран" 
-              secondary="Экран, который будет открываться при запуске приложения" 
-            />
-            <ListItemSecondaryAction sx={{ top: '50%', transform: 'translateY(-50%)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+              <ListItemText 
+                primary="Начальный экран" 
+                secondary="Экран при запуске" 
+                sx={{ mr: 2 }}
+              />
               <FormControl variant="outlined" size="small" sx={{ minWidth: 130 }}>
                 <Select
                   value={defaultScreen}
@@ -125,58 +127,64 @@ const Settings = () => {
                   ))}
                 </Select>
               </FormControl>
-            </ListItemSecondaryAction>
+            </Box>
           </ListItem>
           
           <Divider variant="inset" component="li" />
+          
+          {/* Уведомления */}
           <ListItem>
             <ListItemIcon>
               <NotificationsIcon />
             </ListItemIcon>
-            <ListItemText 
-              primary="Уведомления" 
-              secondary="Push-уведомления о предстоящих событиях" 
-            />
-            <ListItemSecondaryAction>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+              <ListItemText 
+                primary="Уведомления" 
+                secondary="Push-уведомления о событиях" 
+                sx={{ mr: 2 }}
+              />
               <NeuSwitch 
-                edge="end"
                 checked={userSettings.notifications.enabled}
               />
-            </ListItemSecondaryAction>
+            </Box>
           </ListItem>
           <Divider variant="inset" component="li" />
+          
+          {/* Звук */}
           <ListItem>
             <ListItemIcon>
               <VolumeIcon />
             </ListItemIcon>
-            <ListItemText 
-              primary="Звук" 
-              secondary="Звуковые уведомления" 
-            />
-            <ListItemSecondaryAction>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+              <ListItemText 
+                primary="Звук" 
+                secondary="Звуковые уведомления" 
+                sx={{ mr: 2 }}
+              />
               <NeuSwitch 
-                edge="end"
                 checked={userSettings.notifications.sound}
                 disabled={!userSettings.notifications.enabled}
               />
-            </ListItemSecondaryAction>
+            </Box>
           </ListItem>
           <Divider variant="inset" component="li" />
+          
+          {/* Вибрация */}
           <ListItem>
             <ListItemIcon>
               <VibrationIcon />
             </ListItemIcon>
-            <ListItemText 
-              primary="Вибрация" 
-              secondary="Вибрация при уведомлениях" 
-            />
-            <ListItemSecondaryAction>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+              <ListItemText 
+                primary="Вибрация" 
+                secondary="Вибрация при уведомлениях" 
+                sx={{ mr: 2 }}
+              />
               <NeuSwitch 
-                edge="end"
                 checked={userSettings.notifications.vibration}
                 disabled={!userSettings.notifications.enabled}
               />
-            </ListItemSecondaryAction>
+            </Box>
           </ListItem>
         </List>
       </NeuCard>

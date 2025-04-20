@@ -1,84 +1,81 @@
-import React from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
+import React, { useContext } from 'react';
+import { Box, Typography, useTheme, CircularProgress } from '@mui/material';
 import { motion } from 'framer-motion';
+import { ThemeContext } from '../index';
+import { NeuCard } from './neumorphic';
 
-const LoadingContainer = {
-  width: "2rem",
-  height: "2rem",
-  display: "flex",
-  justifyContent: "space-around"
-};
-
-const LoadingCircle = {
-  display: "block",
-  width: "0.5rem",
-  height: "0.5rem",
-  backgroundColor: "currentColor",
-  borderRadius: "0.25rem"
-};
-
-const LoadingContainerVariants = {
-  initial: {
-    transition: {
-      staggerChildren: 0.2
-    }
-  },
-  animate: {
-    transition: {
-      staggerChildren: 0.2
-    }
-  }
-};
-
-const LoadingCircleVariants = {
-  initial: {
-    y: "0%"
-  },
-  animate: {
-    y: "100%",
-    transition: {
-      duration: 0.5,
-      yoyo: Infinity,
-      ease: "easeInOut"
-    }
-  }
-};
-
-const Loading = () => {
+/**
+ * Компонент загрузки с неоморфным дизайном
+ * 
+ * @param {Object} props - свойства компонента
+ * @param {string} props.message - текст сообщения загрузки
+ * @returns {JSX.Element} компонент загрузки
+ */
+const Loading = ({ message = 'Загрузка приложения...' }) => {
   const theme = useTheme();
-
+  const { isDarkMode } = useContext(ThemeContext);
+  
+  // Анимация для вращения логотипа/индикатора
+  const spinAnimation = {
+    animate: {
+      rotate: 360,
+      transition: {
+        duration: 2,
+        ease: "linear",
+        repeat: Infinity
+      }
+    }
+  };
+  
   return (
     <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
       sx={{
-        color: theme.palette.primary.main,
+        height: '100vh',
+        width: '100vw',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDarkMode ? '#1A1D23' : '#E6EEF8',
       }}
     >
       <motion.div
-        style={LoadingContainer}
-        variants={LoadingContainerVariants}
-        initial="initial"
-        animate="animate"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
       >
-        <motion.span style={LoadingCircle} variants={LoadingCircleVariants} />
-        <motion.span style={LoadingCircle} variants={LoadingCircleVariants} />
-        <motion.span style={LoadingCircle} variants={LoadingCircleVariants} />
+        <NeuCard
+          variant="raised"
+          sx={{
+            p: 4,
+            width: 280,
+            textAlign: 'center',
+            backgroundColor: isDarkMode ? 'rgba(38, 42, 51, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <Box sx={{ mb: 3 }}>
+            <motion.div
+              animate="animate"
+              variants={spinAnimation}
+            >
+              <CircularProgress 
+                size={60} 
+                thickness={4} 
+                color="primary" 
+              />
+            </motion.div>
+          </Box>
+          
+          <Typography variant="h6" fontWeight={600} gutterBottom>
+            {message}
+          </Typography>
+          
+          <Typography variant="body2" color="text.secondary">
+            Пожалуйста, подождите...
+          </Typography>
+        </NeuCard>
       </motion.div>
-      <Typography 
-        variant="body1" 
-        sx={{ 
-          mt: 3,
-          fontSize: "1rem",
-          fontWeight: 500,
-          opacity: 0.8
-        }}
-      >
-        Загрузка...
-      </Typography>
     </Box>
   );
 };

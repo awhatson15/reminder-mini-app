@@ -1,10 +1,8 @@
 import React, { useContext } from 'react';
 import {
-  Card,
   CardContent,
   Typography,
   Box,
-  IconButton,
   Avatar,
   Chip,
   useTheme
@@ -29,6 +27,7 @@ import {
 import { getDaysUntil, getRelativeDateString } from '../utils/dateUtils';
 import { plural } from '../utils/textUtils';
 import { ThemeContext } from '../index';
+import { NeuCard, NeuIcon } from './neumorphic';
 
 /**
  * Получает иконку для группы напоминания
@@ -56,16 +55,10 @@ const getGroupIcon = (group) => {
 const getCardStyle = (reminder, theme, isDarkMode) => {
   const daysUntil = getDaysUntil(reminder.date);
   
-  // Базовые неоморфные тени
-  const neuShadows = isDarkMode 
-    ? '5px 5px 10px rgba(0, 0, 0, 0.7), -5px -5px 10px rgba(255, 255, 255, 0.05)'
-    : '5px 5px 10px rgba(0, 0, 0, 0.15), -5px -5px 10px rgba(255, 255, 255, 0.7)';
-  
   // Стиль для дней рождения
   if (reminder.type === 'birthday') {
     return {
       background: theme.palette.typeColors.birthday,
-      boxShadow: neuShadows,
       border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   }
@@ -74,19 +67,16 @@ const getCardStyle = (reminder, theme, isDarkMode) => {
   if (daysUntil === 0) {
     return {
       background: theme.palette.typeColors.urgent,
-      boxShadow: neuShadows,
       border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   } else if (daysUntil <= 3) {
     return {
       background: theme.palette.typeColors.soon,
-      boxShadow: neuShadows,
       border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   } else {
     return {
       background: theme.palette.typeColors.personal,
-      boxShadow: neuShadows,
       border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.5)'
     };
   }
@@ -113,9 +103,6 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
   const hoverAnimation = {
     rest: { 
       scale: 1,
-      boxShadow: isDarkMode 
-        ? '5px 5px 10px rgba(0, 0, 0, 0.7), -5px -5px 10px rgba(255, 255, 255, 0.05)'
-        : '5px 5px 10px rgba(0, 0, 0, 0.15), -5px -5px 10px rgba(255, 255, 255, 0.7)',
       y: 0,
       transition: {
         duration: 0.3,
@@ -125,39 +112,12 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
     },
     hover: { 
       scale: 1.03,
-      boxShadow: isDarkMode 
-        ? '10px 10px 20px rgba(0, 0, 0, 0.8), -10px -10px 20px rgba(255, 255, 255, 0.07)'
-        : '10px 10px 20px rgba(0, 0, 0, 0.2), -10px -10px 20px rgba(255, 255, 255, 0.9)',
       y: -5,
       transition: {
         duration: 0.4,
         type: 'spring',
         stiffness: 200
       }
-    }
-  };
-
-  // Стили для кнопок
-  const buttonStyle = {
-    color: '#fff',
-    background: 'rgba(255, 255, 255, 0.15)',
-    backdropFilter: 'blur(4px)',
-    boxShadow: isDarkMode
-      ? '2px 2px 5px rgba(0, 0, 0, 0.3), -2px -2px 5px rgba(255, 255, 255, 0.05)'
-      : '2px 2px 5px rgba(255, 255, 255, 0.3), -2px -2px 5px rgba(255, 255, 255, 0.8)',
-    transition: 'all 0.3s',
-    '&:hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: isDarkMode
-        ? '4px 4px 8px rgba(0, 0, 0, 0.4), -2px -2px 5px rgba(255, 255, 255, 0.07)'
-        : '4px 4px 8px rgba(0, 0, 0, 0.15), -2px -2px 5px rgba(255, 255, 255, 1)',
-      background: 'rgba(255, 255, 255, 0.25)',
-    },
-    '&:active': {
-      boxShadow: isDarkMode
-        ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.4), inset -2px -2px 5px rgba(255, 255, 255, 0.05)'
-        : 'inset 2px 2px 5px rgba(0, 0, 0, 0.1), inset -2px -2px 5px rgba(255, 255, 255, 0.5)',
-      transform: 'translateY(0)',
     }
   };
 
@@ -168,7 +128,8 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
       animate="rest"
       variants={hoverAnimation}
     >
-      <Card 
+      <NeuCard 
+        variant="raised"
         sx={{ 
           mb: 2, 
           position: 'relative',
@@ -199,129 +160,103 @@ const ReminderItem = ({ reminder, onEdit, onDelete }) => {
                 {getRelativeDateString(reminder.date)}
               </Typography>
             </Box>
-            <Box sx={{ ml: 1 }}>
-              <IconButton 
-                size="small" 
-                onClick={() => onEdit(reminder._id)}
-                aria-label="Редактировать"
-                sx={{ 
-                  ...buttonStyle,
-                  mr: 1
-                }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-              <IconButton 
+
+            {/* Блок управления */}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <NeuIcon
+                icon={<EditIcon fontSize="small" />}
                 size="small"
-                onClick={() => onDelete(reminder._id)}
-                aria-label="Удалить"
-                sx={buttonStyle}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+                variant="inset"
+                clickable
+                onClick={() => onEdit(reminder)}
+                color="#fff"
+                sx={{ background: 'rgba(255, 255, 255, 0.15)' }}
+              />
+              <NeuIcon
+                icon={<DeleteIcon fontSize="small" />}
+                size="small"
+                variant="inset"
+                clickable
+                onClick={() => onDelete(reminder)}
+                color="#fff"
+                sx={{ background: 'rgba(255, 255, 255, 0.15)' }}
+              />
             </Box>
           </Box>
-          
-          {reminder.description && (
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                mt: 1, 
-                mb: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(4px)',
-                p: 1.5,
-                borderRadius: 16,
-                boxShadow: isDarkMode
-                  ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.03)'
-                  : 'inset 2px 2px 5px rgba(0, 0, 0, 0.05), inset -2px -2px 5px rgba(255, 255, 255, 0.3)',
-                fontWeight: 500
-              }}
-            >
-              {reminder.description}
-            </Typography>
-          )}
-          
-          <Box sx={{ 
-            mt: 1, 
-            display: 'flex', 
-            flexWrap: 'wrap',
-            gap: 1
-          }}>
-            <Chip
-              icon={reminder.type === 'birthday' ? <CakeIcon /> : <EventIcon />}
-              label={reminder.type === 'birthday' ? 'День рождения' : 'Событие'}
-              size="small"
-              sx={{ 
-                bgcolor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(4px)',
-                color: '#fff',
-                fontWeight: 600,
-                boxShadow: isDarkMode
-                  ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
-                  : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
-                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
-              }}
-            />
-            
-            {reminder.group && (
-              <Chip
-                icon={getGroupIcon(reminder.group)}
-                label={reminder.group}
-                size="small"
+
+          {/* Информация о напоминании */}
+          <Box sx={{ mt: 1 }}>
+            {reminder.description && (
+              <Typography 
+                variant="body2" 
                 sx={{ 
-                  bgcolor: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(4px)',
-                  color: '#fff', 
-                  fontWeight: 600,
-                  textTransform: 'capitalize',
-                  boxShadow: isDarkMode
-                    ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
-                    : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
-                  border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
+                  mb: 1, 
+                  opacity: 0.9,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}
-              />
+              >
+                {reminder.description}
+              </Typography>
             )}
             
-            {reminder.isRecurring && (
-              <Chip
-                icon={<RepeatIcon />}
-                label={
-                  reminder.recurringType === 'weekly' ? 'Еженедельно' :
-                  reminder.recurringType === 'monthly' ? 'Ежемесячно' : 'Ежегодно'
-                }
-                size="small"
-                sx={{ 
-                  bgcolor: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(4px)',
-                  color: '#fff',
-                  fontWeight: 600,
-                  boxShadow: isDarkMode
-                    ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
-                    : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
-                  border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
-                }}
-              />
-            )}
-            
-            <Chip
-              icon={daysUntil === 0 ? <TimeAltIcon /> : <TimeIcon />}
-              label={daysUntil === 0 ? 'Сегодня' : `${daysUntil} ${plural(daysUntil, 'день', 'дня', 'дней')}`}
-              size="small"
-              sx={{ 
-                bgcolor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(4px)',
-                color: '#fff',
-                fontWeight: 600,
-                boxShadow: isDarkMode
-                  ? '2px 2px 5px rgba(0, 0, 0, 0.3), -1px -1px 3px rgba(255, 255, 255, 0.05)'
-                  : '2px 2px 5px rgba(0, 0, 0, 0.05), -1px -1px 3px rgba(255, 255, 255, 0.5)',
-                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.03)' : '1px solid rgba(255, 255, 255, 0.2)',
-              }}
-            />
+            {/* Теги */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+              {reminder.group && (
+                <Chip
+                  size="small"
+                  icon={getGroupIcon(reminder.group)}
+                  label={reminder.group}
+                  sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontWeight: 500,
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                />
+              )}
+              
+              {reminder.isRecurring && (
+                <Chip
+                  size="small"
+                  icon={<RepeatIcon fontSize="small" />}
+                  label="Повторяющееся"
+                  sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontWeight: 500,
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                />
+              )}
+              
+              {/* Индикатор срочности */}
+              {daysUntil <= 3 && (
+                <Chip
+                  size="small"
+                  icon={daysUntil === 0 ? <TimeIcon fontSize="small" /> : <TimeAltIcon fontSize="small" />}
+                  label={daysUntil === 0 
+                    ? 'Сегодня' 
+                    : `Через ${daysUntil} ${plural(daysUntil, ['день', 'дня', 'дней'])}`
+                  }
+                  sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontWeight: 500,
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                />
+              )}
+            </Box>
           </Box>
         </CardContent>
-      </Card>
+      </NeuCard>
     </motion.div>
   );
 };

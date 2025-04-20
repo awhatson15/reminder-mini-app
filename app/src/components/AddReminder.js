@@ -15,7 +15,8 @@ import {
   FormHelperText,
   Snackbar,
   Alert,
-  Stack
+  Stack,
+  CircularProgress,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
@@ -29,11 +30,14 @@ const AddReminder = () => {
   // Состояния для формы
   const [title, setTitle] = useState('');
   const [type, setType] = useState('birthday');
-  const [date, setDate] = useState(dayjs());
+  const [day, setDay] = useState('');
+  const [month, setMonth] = useState('');
+  const [year, setYear] = useState(dayjs().year().toString());
+  const [includeYear, setIncludeYear] = useState(false);
   const [description, setDescription] = useState('');
   const [notifyDaysBefore, setNotifyDaysBefore] = useState(1);
   
-  // Состояния для валидации
+  // Состояния для валидации и загрузки
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -42,10 +46,22 @@ const AddReminder = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Валидация
+    // Валидация формы
     const newErrors = {};
     if (!title.trim()) {
       newErrors.title = 'Введите название';
+    }
+    
+    if (!day || day < 1 || day > 31) {
+      newErrors.day = 'Введите корректный день (1-31)';
+    }
+    
+    if (!month || month < 1 || month > 12) {
+      newErrors.month = 'Введите корректный месяц (1-12)';
+    }
+    
+    if (type === 'event' && !year) {
+      newErrors.year = 'Для события необходимо указать год';
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -56,31 +72,18 @@ const AddReminder = () => {
     try {
       setLoading(true);
       
-      // Получаем день и месяц из объекта dayjs
-      const dayValue = date.date();
-      const monthValue = date.month() + 1;
-      
-      // Подготовка данных о дате с гарантированными значениями
+      // Подготовка данных о дате
       const dateData = {
-        day: dayValue,
-        month: monthValue,
+        day: parseInt(day, 10),
+        month: parseInt(month, 10)
       };
       
-      // Год добавляем только для обычных событий, но гарантируем, что он останется undefined при отсутствии
-      if (type !== 'birthday') {
-        dateData.year = date.year();
+      // Год добавляем только для обычных событий или если выбрано для дня рождения
+      if (type === 'event' || (type === 'birthday' && includeYear)) {
+        dateData.year = parseInt(year, 10);
       }
       
-      console.log('Отправляемые данные:', {
-        telegramId: user.telegramId,
-        title: title.trim(),
-        type,
-        date: dateData,
-        description: description.trim(),
-        notifyDaysBefore
-      });
-      
-      // Отправка запроса с подготовленными данными
+      // Отправка запроса
       await axios.post('/api/reminders', {
         telegramId: user.telegramId,
         title: title.trim(),
@@ -104,7 +107,6 @@ const AddReminder = () => {
       console.error('Ошибка при создании напоминания:', error);
       let errorMessage = 'Ошибка при создании напоминания';
       
-      // Если есть ответ от сервера, показываем его сообщение
       if (error.response && error.response.data && error.response.data.message) {
         errorMessage = error.response.data.message;
       }
@@ -121,6 +123,17 @@ const AddReminder = () => {
   // Обработчик закрытия snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+  
+  // Обработчик изменения типа
+  const handleTypeChange = (e) => {
+    setType(e.target.value);
+    // Сбрасываем ошибки при изменении типа
+    setErrors({...errors, year: undefined});
+    // Сбрасываем включение года для дня рождения при изменении типа
+    if (e.target.value === 'birthday') {
+      setIncludeYear(false);
+    }
   };
   
   return (
@@ -149,7 +162,7 @@ const AddReminder = () => {
             <RadioGroup
               row
               value={type}
-              onChange={(e) => setType(e.target.value)}
+              onChange={handleTypeChange}
             >
               <FormControlLabel 
                 value="birthday" 
@@ -166,18 +179,86 @@ const AddReminder = () => {
             </RadioGroup>
           </FormControl>
           
-          <DatePicker
-            label="Дата"
-            value={date}
-            onChange={(newDate) => setDate(newDate)}
-            disabled={loading}
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                helperText: type === 'birthday' ? 'Для дня рождения год не обязателен' : ''
-              }
-            }}
-          />
+          {/* Заменяем DatePicker на отдельные поля для дня, месяца и года */}
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              label="День"
+              type="number"
+              fullWidth
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+              inputProps={{ min: 1, max: 31 }}
+              error={!!errors.day}
+              helperText={errors.day}
+              disabled={loading}
+              required
+            />
+            
+            <TextField
+              label="Месяц"
+              type="number"
+              fullWidth
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              inputProps={{ min: 1, max: 12 }}
+              error={!!errors.month}
+              helperText={errors.month}
+              disabled={loading}
+              required
+            />
+          </Box>
+          
+          {/* Показываем поле для года для обычных событий обязательно */}
+          {type === 'event' ? (
+            <TextField
+              label="Год"
+              type="number"
+              fullWidth
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              error={!!errors.year}
+              helperText={errors.year}
+              disabled={loading}
+              required
+            />
+          ) : (
+            /* Для дней рождения показываем опцию добавить год */
+            <Box>
+              <FormControlLabel
+                control={
+                  <Radio 
+                    checked={!includeYear}
+                    onChange={() => setIncludeYear(false)}
+                    disabled={loading}
+                  />
+                }
+                label="Без указания года" 
+              />
+              <FormControlLabel
+                control={
+                  <Radio 
+                    checked={includeYear}
+                    onChange={() => setIncludeYear(true)}
+                    disabled={loading}
+                  />
+                }
+                label="С указанием года" 
+              />
+              {includeYear && (
+                <TextField
+                  label="Год"
+                  type="number"
+                  fullWidth
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  error={!!errors.year}
+                  helperText={errors.year}
+                  disabled={loading}
+                  sx={{ mt: 2 }}
+                />
+              )}
+            </Box>
+          )}
           
           <TextField
             label="Описание (необязательно)"
@@ -226,7 +307,11 @@ const AddReminder = () => {
               disabled={loading}
               fullWidth
             >
-              Сохранить
+              {loading ? (
+                <CircularProgress size={24} />
+              ) : (
+                'Сохранить'
+              )}
             </Button>
           </Box>
         </Stack>

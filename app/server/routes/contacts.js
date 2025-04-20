@@ -36,6 +36,56 @@ router.get('/telegram', async (req, res) => {
   }
 });
 
+// Синхронизация контактов
+router.post('/sync', async (req, res) => {
+  try {
+    const { contacts } = req.body;
+    const { _id: userId } = req.user;
+    
+    const syncedContacts = [];
+    
+    for (const contact of contacts) {
+      // Ищем контакт по телефону или email
+      const query = {
+        userId,
+        $or: [
+          { phones: { $in: contact.tel } },
+          { emails: { $in: contact.email } }
+        ]
+      };
+      
+      const existingContact = await Contact.findOne(query);
+      
+      if (existingContact) {
+        // Обновляем существующий контакт
+        existingContact.name = contact.name[0];
+        existingContact.phones = contact.tel;
+        existingContact.emails = contact.email;
+        existingContact.address = contact.address?.[0];
+        existingContact.source = 'phone';
+        await existingContact.save();
+        syncedContacts.push(existingContact);
+      } else {
+        // Создаем новый контакт
+        const newContact = await Contact.create({
+          userId,
+          name: contact.name[0],
+          phones: contact.tel,
+          emails: contact.email,
+          address: contact.address?.[0],
+          source: 'phone'
+        });
+        syncedContacts.push(newContact);
+      }
+    }
+    
+    res.json(syncedContacts);
+  } catch (error) {
+    console.error('Ошибка при синхронизации контактов:', error);
+    res.status(500).json({ message: 'Ошибка при синхронизации контактов' });
+  }
+});
+
 // Поиск контактов
 router.get('/search', async (req, res) => {
   try {
@@ -46,10 +96,14 @@ router.get('/search', async (req, res) => {
       return res.json([]);
     }
     
-    // Ищем контакты по имени
+    // Ищем контакты по имени или телефону
     const contacts = await Contact.find({
       userId,
-      name: { $regex: q, $options: 'i' }
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { phones: { $regex: q, $options: 'i' } },
+        { emails: { $regex: q, $options: 'i' } }
+      ]
     }).limit(10);
     
     res.json(contacts);
@@ -93,6 +147,34 @@ router.post('/import-birthdays', async (req, res) => {
   } catch (error) {
     console.error('Ошибка при импорте дней рождения:', error);
     res.status(500).json({ message: 'Ошибка при импорте дней рождения' });
+  }
+});
+
+// Импорт контактов
+router.post('/import', async (req, res) => {
+  try {
+    const { contacts } = req.body;
+    const { _id: userId } = req.user;
+    
+    const importedContacts = [];
+    
+    for (const contact of contacts) {
+      const newContact = await Contact.create({
+        userId,
+        name: contact.name[0],
+        phones: contact.tel,
+        emails: contact.email,
+        address: contact.address?.[0],
+        source: 'phone'
+      });
+      
+      importedContacts.push(newContact);
+    }
+    
+    res.json(importedContacts);
+  } catch (error) {
+    console.error('Ошибка при импорте контактов:', error);
+    res.status(500).json({ message: 'Ошибка при импорте контактов' });
   }
 });
 

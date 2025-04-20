@@ -6,17 +6,26 @@ const contactSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  telegramId: {
-    type: Number,
-    required: true,
-    unique: true
-  },
   name: {
     type: String,
     required: true
   },
-  photo: String,
+  phones: [{
+    type: String,
+    index: true
+  }],
+  emails: [{
+    type: String
+  }],
+  address: {
+    type: String
+  },
   birthday: Date,
+  source: {
+    type: String,
+    enum: ['phone', 'telegram', 'manual'],
+    default: 'manual'
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -26,6 +35,9 @@ const contactSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// Индекс для поиска по имени
+contactSchema.index({ name: 'text' });
 
 // Обновляем updatedAt при изменении документа
 contactSchema.pre('save', function(next) {

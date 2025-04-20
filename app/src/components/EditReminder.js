@@ -394,6 +394,7 @@ const EditReminder = () => {
     const fieldsToValidate = {
       0: ['title', 'type'],
       1: ['day', 'month', ...(type === 'event' ? ['year'] : [])],
+      2: [...(isRecurring ? ['recurringDayOfWeek', 'endDate'] : [])]
     };
     
     const currentFields = fieldsToValidate[activeStep] || [];

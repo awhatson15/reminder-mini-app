@@ -172,6 +172,7 @@ const ReminderList = () => {
       try {
         setLoading(true);
         const response = await axios.get(`/api/reminders?telegramId=${user.telegramId}`);
+        console.log('Загруженные напоминания:', response.data);
         setReminders(response.data);
         
         // Очищаем кэш расчета дней при обновлении данных
@@ -189,6 +190,7 @@ const ReminderList = () => {
       }
     };
 
+    console.log('Запрос напоминаний для пользователя:', user);
     fetchReminders();
   }, [user]);
 
@@ -285,30 +287,48 @@ const ReminderList = () => {
 
   // Фильтрация по группе и сортировка ремайндеров (мемоизированный расчет)
   const filteredAndSortedReminders = useMemo(() => {
-    return [...reminders]
-      .filter(reminder => selectedGroup === 'all' || reminder.group === selectedGroup)
-      .sort((a, b) => {
-        if (sortType === 'date') {
-          const daysA = getDaysUntil(a.date);
-          const daysB = getDaysUntil(b.date);
-          return daysA - daysB;
-        } else {
-          return a.title.localeCompare(b.title);
-        }
-      });
+    if (!reminders || reminders.length === 0) {
+      console.log('Нет напоминаний для фильтрации');
+      return [];
+    }
+    
+    console.log('Фильтрация напоминаний по группе:', selectedGroup);
+    const filtered = [...reminders]
+      .filter(reminder => selectedGroup === 'all' || reminder.group === selectedGroup);
+      
+    console.log('Отфильтровано напоминаний:', filtered.length);
+    
+    return filtered.sort((a, b) => {
+      if (sortType === 'date') {
+        const daysA = getDaysUntil(a.date);
+        const daysB = getDaysUntil(b.date);
+        return daysA - daysB;
+      } else {
+        return a.title.localeCompare(b.title);
+      }
+    });
   }, [reminders, selectedGroup, sortType]);
 
   // Группируем напоминания и подготавливаем для виртуализации
   const groupedItems = useMemo(() => {
+    console.log('Фильтрованные напоминания:', filteredAndSortedReminders);
     if (!filteredAndSortedReminders || filteredAndSortedReminders.length === 0) return [];
     const groups = groupRemindersByTime(filteredAndSortedReminders);
-    return prepareItemsForVirtualList(groups);
+    console.log('Сгруппированные напоминания:', groups);
+    const result = prepareItemsForVirtualList(groups);
+    console.log('Подготовленные элементы для списка:', result);
+    return result;
   }, [filteredAndSortedReminders]);
   
   // Определение пустого состояния (мемоизированный расчет)
   const isEmpty = useMemo(() => {
+    console.log('Проверка пустого состояния', {
+      filteredLength: filteredAndSortedReminders.length,
+      remindersLength: reminders.length,
+      selectedGroup
+    });
     return filteredAndSortedReminders.length === 0;
-  }, [filteredAndSortedReminders]);
+  }, [filteredAndSortedReminders, reminders.length]);
 
   // Подсчет напоминаний в каждой группе для бейджа (мемоизированный расчет)
   const groupCounts = useMemo(() => {
@@ -477,7 +497,7 @@ const ReminderList = () => {
         </ToggleButtonGroup>
       </Box>
 
-      {isEmpty ? (
+      {isEmpty && reminders.length === 0 ? (
         <Box sx={{ 
           textAlign: 'center', 
           mt: 8,
@@ -505,18 +525,71 @@ const ReminderList = () => {
           </Button>
         </Box>
       ) : (
-        <AutoSizer>
-          {({ height, width }) => (
-            <VirtualList
-              height={height}
-              width={width}
-              itemCount={groupedItems.length}
-              itemSize={getItemHeight}
-            >
-              {ItemRenderer}
-            </VirtualList>
+        <Box>
+          {console.log('Rendering reminder list', {
+            filteredCount: filteredAndSortedReminders.length,
+            groupedCount: groupedItems.length,
+            isEmpty,
+            selectedGroup
+          })}
+          
+          {/* Заголовки и напоминания по группам без виртуализации */}
+          {groupedItems.map((item) => {
+            if (item.type === 'header') {
+              return (
+                <Typography 
+                  key={item.key} 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600, 
+                    mb: 1, 
+                    mt: 2,
+                    color: alpha(theme.palette.text.primary, 0.8)
+                  }}
+                >
+                  {item.title}
+                </Typography>
+              );
+            }
+            
+            if (item.type === 'divider') {
+              return <Divider key={item.key} sx={{ my: 1 }} />;
+            }
+            
+            if (item.type === 'reminder') {
+              const reminder = item.reminder;
+              return (
+                <ReminderItem 
+                  key={item.key}
+                  reminder={reminder}
+                  onEdit={(id) => navigate(`/edit/${id}`)}
+                  onDelete={(id) => {
+                    setReminderToDelete(reminders.find(r => r._id === id));
+                    setDeleteDialogOpen(true);
+                  }}
+                />
+              );
+            }
+            
+            return null;
+          })}
+          
+          {/* Если нет напоминаний в выбранной группе, но есть в других */}
+          {groupedItems.length === 0 && filteredAndSortedReminders.length === 0 && reminders.length > 0 && (
+            <Box sx={{ 
+              textAlign: 'center', 
+              mt: 4,
+              p: 3,
+              bgcolor: alpha(theme.palette.primary.main, 0.05),
+              borderRadius: 4,
+              border: `1px dashed ${alpha(theme.palette.primary.main, 0.3)}`
+            }}>
+              <Typography variant="body1" color="text.secondary">
+                В выбранной группе нет напоминаний
+              </Typography>
+            </Box>
           )}
-        </AutoSizer>
+        </Box>
       )}
 
       {/* Диалог подтверждения удаления */}

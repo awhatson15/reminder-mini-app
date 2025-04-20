@@ -17,8 +17,7 @@ import {
   Avatar,
   TableHead,
   TableCell,
-  TableRow,
-  TextField
+  TableRow
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
@@ -41,9 +40,6 @@ import TimelineView from './TimelineView';
 import FocusView from './FocusView';
 import { getEventIcon, getEventIconByGroup } from '../utils/eventUtils';
 import Toast from './Toast';
-import { StaticDatePicker } from '@mui/x-date-pickers';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
 
 // Названия дней недели
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -74,17 +70,17 @@ const CalendarView = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
+  const isMobile = window.innerWidth <= 600;
   
   // Состояние
   const [currentDate, setCurrentDate] = useState(dayjs()); // текущая отображаемая дата
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('focus'); // calendar, focus, timeline
+  const [viewMode, setViewMode] = useState('calendar'); // calendar, focus, timeline
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
-  const [isMobile, setIsMobile] = useState(false);
-
+  
   // Загрузка напоминаний
   useEffect(() => {
     const fetchReminders = async () => {
@@ -220,449 +216,387 @@ const CalendarView = () => {
     return (remindersByDate[dateKey] || []).length;
   };
 
-  const handleDateChange = (newDate) => {
-    setSelectedDate(newDate);
-    const dateKey = `${newDate.date()}-${newDate.month() + 1}`;
-    const dateEvents = remindersByDate[dateKey] || [];
-    setSelectedDateEvents(dateEvents);
-  };
-
-  const renderCalendarDay = (day, props) => {
-    const isCurrentMonth = day.month() === currentDate.month();
-    const isCurrent = isToday(day.toDate());
-    const isSelected = selectedDate && day.isSame(selectedDate, 'day');
-    const eventColor = getDateColor(day);
-    const eventCount = getEventCount(day);
-    
-    return (
-      <Paper
-        elevation={isCurrent || isSelected ? 3 : 0}
-        sx={{
-          position: 'relative',
-          height: '50px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          bgcolor: isSelected 
-            ? alpha(theme.palette.primary.main, 0.1) 
-            : isCurrent 
-              ? alpha(theme.palette.primary.main, 0.05) 
-              : isCurrentMonth 
-                ? 'background.paper' 
-                : alpha(theme.palette.action.disabledBackground, 0.3),
-          color: !isCurrentMonth 
-            ? theme.palette.text.disabled
-            : theme.palette.text.primary,
-          border: isSelected
-            ? `2px solid ${theme.palette.primary.main}`
-            : isCurrent
-              ? `1px solid ${theme.palette.primary.main}`
-              : 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-          '&:hover': {
-            bgcolor: alpha(theme.palette.primary.main, 0.05),
-            transform: 'scale(1.02)'
-          },
-          '&:active': {
-            transform: 'scale(0.98)'
-          },
-          ...props.style
-        }}
-        onClick={() => handleDateClick(day)}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          handleLongPress(day);
-        }}
-      >
-        <Typography variant="body2" fontWeight={isCurrent ? 'bold' : 'normal'}>
-          {day.date()}
-        </Typography>
-        
-        {/* Индикаторы событий */}
-        {eventCount > 0 && (
-          <Box sx={{ 
-            display: 'flex', 
-            position: 'absolute',
-            bottom: '2px',
-            gap: '2px'
-          }}>
-            {eventCount <= 3 ? (
-              // Для небольшого количества событий показываем точки
-              Array(eventCount).fill(0).map((_, i) => (
-                <Box
-                  key={i}
-                  sx={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    backgroundColor: eventColor,
-                    opacity: 0.8 + (i * 0.1), // увеличение яркости для каждой последующей точки
-                  }}
-                />
-              ))
-            ) : (
-              // Для большого количества показываем счетчик
-              <Badge
-                badgeContent={eventCount}
-                color="primary"
-                sx={{ 
-                  '& .MuiBadge-badge': { 
-                    fontSize: '9px', 
-                    height: '14px', 
-                    minWidth: '14px',
-                    background: eventColor 
-                  } 
-                }}
-              />
-            )}
-          </Box>
-        )}
-      </Paper>
-    );
-  };
-
-  const handleMonthChange = (newDate) => {
-    setCurrentDate(newDate);
-  };
-
-  const CustomActionBar = ({ handleMonthChange }) => {
-    const currentMonth = currentDate.format('MMMM yyyy');
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '8px 12px',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-        }}
-      >
-        <IconButton onClick={() => handleMonthChange(currentDate.subtract(1, 'month'))}>
-          <PrevIcon />
-        </IconButton>
-        
-        <Typography variant="h6" fontWeight="medium">
-          {currentMonth}
-        </Typography>
-        
-        <IconButton onClick={() => handleMonthChange(currentDate.add(1, 'month'))}>
-          <NextIcon />
-        </IconButton>
-      </Box>
-    );
-  };
-
-  const Day = ({ day, ...props }) => {
-    const isCurrentMonth = day.month() === currentDate.month();
-    const isCurrent = isToday(day.toDate());
-    const isSelected = selectedDate && day.isSame(selectedDate, 'day');
-    const eventColor = getDateColor(day);
-    const eventCount = getEventCount(day);
-    
-    return (
-      <Paper
-        elevation={isCurrent || isSelected ? 3 : 0}
-        sx={{
-          position: 'relative',
-          height: '50px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          bgcolor: isSelected 
-            ? alpha(theme.palette.primary.main, 0.1) 
-            : isCurrent 
-              ? alpha(theme.palette.primary.main, 0.05) 
-              : isCurrentMonth 
-                ? 'background.paper' 
-                : alpha(theme.palette.action.disabledBackground, 0.3),
-          color: !isCurrentMonth 
-            ? theme.palette.text.disabled
-            : theme.palette.text.primary,
-          border: isSelected
-            ? `2px solid ${theme.palette.primary.main}`
-            : isCurrent
-              ? `1px solid ${theme.palette.primary.main}`
-              : 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-          '&:hover': {
-            bgcolor: alpha(theme.palette.primary.main, 0.05),
-            transform: 'scale(1.02)'
-          },
-          '&:active': {
-            transform: 'scale(0.98)'
-          },
-          ...props.style
-        }}
-        onClick={() => handleDateClick(day)}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          handleLongPress(day);
-        }}
-      >
-        <Typography variant="body2" fontWeight={isCurrent ? 'bold' : 'normal'}>
-          {day.date()}
-        </Typography>
-        
-        {/* Индикаторы событий */}
-        {eventCount > 0 && (
-          <Box sx={{ 
-            display: 'flex', 
-            position: 'absolute',
-            bottom: '2px',
-            gap: '2px'
-          }}>
-            {eventCount <= 3 ? (
-              // Для небольшого количества событий показываем точки
-              Array(eventCount).fill(0).map((_, i) => (
-                <Box
-                  key={i}
-                  sx={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    backgroundColor: eventColor,
-                    opacity: 0.8 + (i * 0.1), // увеличение яркости для каждой последующей точки
-                  }}
-                />
-              ))
-            ) : (
-              // Для большого количества показываем счетчик
-              <Badge
-                badgeContent={eventCount}
-                color="primary"
-                sx={{ 
-                  '& .MuiBadge-badge': { 
-                    fontSize: '9px', 
-                    height: '14px', 
-                    minWidth: '14px',
-                    background: eventColor 
-                  } 
-                }}
-              />
-            )}
-          </Box>
-        )}
-      </Paper>
-    );
-  };
-
   if (loading) {
     return <Loading />;
   }
-
+  
   return (
-    <Box
-      sx={{
+    <Box sx={{ width: '100%' }}>
+      {/* Заголовок и переключатель режимов */}
+      <Box sx={{ 
         display: 'flex',
         flexDirection: 'column',
-        gap: isMobile ? 1 : 2, // Уменьшаем отступы для мобильных устройств
-      }}
-    >
-      <StaticDatePicker
-        displayStaticWrapperAs="desktop"
-        label="Календарь"
-        value={selectedDate}
-        onChange={handleDateChange}
-        renderInput={(params) => <TextField {...params} />}
-        dayOfWeekFormatter={(day) => WEEKDAYS_SHORT[day.charAt(0).toUpperCase() + day.slice(1)]}
-        renderDay={(day, _value, DayComponentProps) => renderCalendarDay(day, DayComponentProps)}
-        toolbarTitle={format(currentDate, 'MMMM yyyy', { locale: ru })}
-        showToolbar
-        toolbarFormat="MMMM yyyy"
-        components={{
-          ActionBar: CustomActionBar,
-          // Отключаем компактный вид только на очень маленьких экранах
-          Day: (props) => <Day {...props} style={{ 
-            margin: isMobile ? '1px' : '2px',  
-            padding: isMobile ? 0 : '2px',
-            fontSize: isMobile ? '0.8rem' : '0.9rem'
-          }} />
-        }}
-        componentsProps={{
-          actionBar: { handleMonthChange },
-        }}
-        sx={{
-          borderRadius: '16px',
-          boxShadow: theme.palette.neumorphic.boxShadow,
-          background: theme.palette.background.paper,
-          '& .MuiPickersToolbar-root': {
-            padding: isMobile ? '8px 12px' : '16px',
-            borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-          },
-          '& .MuiPickersCalendarHeader-root': {
-            paddingLeft: isMobile ? '8px' : '16px',
-            paddingRight: isMobile ? '8px' : '16px',
-          },
-          '& .MuiDayPicker-weekDayLabel': {
-            width: isMobile ? '30px' : '36px',
-            height: isMobile ? '24px' : '36px',
-            fontSize: isMobile ? '0.7rem' : '0.75rem',
-          },
-          '& .MuiPickersDay-root': {
-            width: isMobile ? '30px' : '36px',
-            height: isMobile ? '30px' : '36px',
-            fontSize: isMobile ? '0.8rem' : '0.875rem',
-          },
-        }}
-        localeText={{
-          previousMonth: 'Предыдущий месяц',
-          nextMonth: 'Следующий месяц',
-        }}
-      />
+        alignItems: 'center',
+        mb: isMobile ? 2 : 3,
+        mt: isMobile ? 1 : 1.5 
+      }}>
+        <Typography 
+          variant="h5" 
+          fontWeight="bold" 
+          sx={{ 
+            mb: 2, 
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: -8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 40,
+              height: 3,
+              backgroundColor: theme.palette.primary.main,
+              borderRadius: 4
+            }
+          }}
+        >
+          Мои напоминания
+        </Typography>
+        
+        <Paper 
+          elevation={2}
+          sx={{
+            width: '100%', 
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`
+          }}
+        >
+          <Tabs 
+            value={viewMode} 
+            onChange={(_, newValue) => setViewMode(newValue)}
+            variant="fullWidth"
+            sx={{ 
+              minHeight: isMobile ? '42px' : '46px',
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '3px 3px 0 0'
+              }
+            }}
+          >
+            <Tab 
+              value="calendar" 
+              icon={<CalendarIcon fontSize="small" />} 
+              label="Календарь"
+              sx={{ 
+                minHeight: isMobile ? '42px' : '46px',
+                fontWeight: viewMode === 'calendar' ? 'medium' : 'normal',
+                textTransform: 'none',
+                fontSize: isMobile ? 14 : 15
+              }}
+            />
+            <Tab 
+              value="focus" 
+              icon={<TimerIcon fontSize="small" />}
+              label="Фокус" 
+              sx={{ 
+                minHeight: isMobile ? '42px' : '46px',
+                fontWeight: viewMode === 'focus' ? 'medium' : 'normal',
+                textTransform: 'none',
+                fontSize: isMobile ? 14 : 15
+              }} 
+            />
+            <Tab 
+              value="timeline" 
+              icon={<TimelineIcon fontSize="small" />}
+              label="Лента" 
+              sx={{ 
+                minHeight: isMobile ? '42px' : '46px',
+                fontWeight: viewMode === 'timeline' ? 'medium' : 'normal',
+                textTransform: 'none',
+                fontSize: isMobile ? 14 : 15
+              }}
+            />
+          </Tabs>
+        </Paper>
+      </Box>
 
-      {/* Отображение событий выбранного дня */}
-      <Box
-        sx={{
-          mt: isMobile ? 1 : 2,
-        }}
-      >
-        <Fade in={selectedDate !== null}>
-          <Box sx={{ mt: 2 }}>
-            {selectedDate && (
-              <>
-                <Paper
-                  sx={{
-                    p: 2,
-                    mb: 2,
-                    borderLeft: `4px solid ${theme.palette.primary.main}`,
-                    borderRadius: '4px',
-                  }}
-                >
-                  <Typography variant="subtitle1" fontWeight="medium">
-                    {selectedDate.format('D MMMM YYYY')}
-                    {isToday(selectedDate.toDate()) && (
-                      <Chip 
-                        label="Сегодня" 
-                        size="small" 
-                        color="primary" 
-                        sx={{ ml: 1, height: '20px' }} 
-                      />
-                    )}
-                    {isTomorrow(selectedDate.toDate()) && (
-                      <Chip 
-                        label="Завтра" 
-                        size="small" 
-                        color="secondary" 
-                        sx={{ ml: 1, height: '20px' }} 
-                      />
-                    )}
-                  </Typography>
-                  
-                  <Divider sx={{ my: 1 }} />
-                  
-                  {selectedDateEvents.length === 0 ? (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
+      {/* Режим Календарь */}
+      {viewMode === 'calendar' && (
+        <motion.div
+          variants={calendarVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+        >
+          {/* Заголовок месяца и навигация */}
+          <Box sx={{ 
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2
+          }}>
+            <IconButton onClick={prevMonth}>
+              <PrevIcon />
+            </IconButton>
+            
+            <Typography variant="h6" fontWeight="medium">
+              {MONTHS[currentDate.month()]} {currentDate.year()}
+            </Typography>
+            
+            <IconButton onClick={nextMonth}>
+              <NextIcon />
+            </IconButton>
+          </Box>
+
+          {/* Дни недели */}
+          <TableHead>
+            <TableRow>
+              {WEEKDAYS_SHORT.map((day) => (
+                <TableCell key={day} align="center" 
+                  sx={{ padding: isMobile ? '6px 2px' : '8px 4px', fontSize: isMobile ? '0.7rem' : '0.8rem' }}>
+                  {day}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+
+          {/* Календарная сетка */}
+          <Grid container spacing={isMobile ? 0.3 : 0.5}>
+            {calendarDays.map((day, index) => {
+              const isCurrentMonth = day.month() === currentDate.month();
+              const isCurrent = isToday(day.toDate());
+              const isSelected = selectedDate && day.isSame(selectedDate, 'day');
+              const eventColor = getDateColor(day);
+              const eventCount = getEventCount(day);
+              
+              return (
+                <Grid item xs={12/7} key={index}>
+                  <Paper
+                    elevation={isCurrent || isSelected ? 3 : 0}
+                    sx={{
+                      position: 'relative',
+                      height: isMobile ? '40px' : '50px',
+                      display: 'flex',
                       flexDirection: 'column',
-                      py: 3 
-                    }}>
-                      <Typography variant="body2" color="text.secondary" mb={2}>
-                        На эту дату нет событий
-                      </Typography>
-                      <Button 
-                        variant="contained" 
-                        startIcon={<AddIcon />}
-                        size="medium"
-                        sx={{
-                          borderRadius: '12px',
-                          py: 1,
-                          px: 3,
-                          textTransform: 'none',
-                          fontWeight: 'medium'
-                        }}
-                        onClick={() => handleLongPress(selectedDate)}
-                      >
-                        Добавить событие
-                      </Button>
-                    </Box>
-                  ) : (
-                    selectedDateEvents.map((event) => {
-                      const eventIcon = event.type === 'birthday' 
-                        ? getEventIcon('birthday') 
-                        : getEventIconByGroup(event.group);
-                      
-                      const eventColor = event.type === 'birthday'
-                        ? CATEGORY_COLORS.birthday
-                        : CATEGORY_COLORS[event.group];
-                          
-                      return (
-                        <Box 
-                          key={event._id}
-                          sx={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 1.5,
-                            p: 1.5,
-                            borderRadius: '10px',
-                            transition: 'all 0.2s',
-                            '&:hover': {
-                              bgcolor: alpha(theme.palette.action.hover, 0.15),
-                              transform: 'translateY(-2px)'
-                            }
-                          }}
-                          onClick={() => navigate(`/edit/${event._id}`)}
-                        >
-                          <Avatar 
-                            sx={{ 
-                              width: 42, 
-                              height: 42, 
-                              bgcolor: alpha(eventColor, 0.15),
-                              color: eventColor,
-                              mr: 2
-                            }}
-                          >
-                            {eventIcon}
-                          </Avatar>
-                          <Box sx={{ flexGrow: 1 }}>
-                            <Typography variant="body1" fontWeight="medium">
-                              {event.title}
-                            </Typography>
-                            {event.description && (
-                              <Typography 
-                                variant="body2" 
-                                color="text.secondary"
-                                sx={{ mt: 0.5 }}
-                              >
-                                {event.description.length > 50 
-                                  ? `${event.description.substring(0, 50)}...` 
-                                  : event.description}
-                              </Typography>
-                            )}
-                          </Box>
-                          <IconButton 
-                            size="medium"
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      bgcolor: isSelected 
+                        ? alpha(theme.palette.primary.main, 0.1) 
+                        : isCurrent 
+                          ? alpha(theme.palette.primary.main, 0.05) 
+                          : isCurrentMonth 
+                            ? 'background.paper' 
+                            : alpha(theme.palette.action.disabledBackground, 0.3),
+                      color: !isCurrentMonth 
+                        ? theme.palette.text.disabled
+                        : theme.palette.text.primary,
+                      border: isSelected
+                        ? `2px solid ${theme.palette.primary.main}`
+                        : isCurrent
+                          ? `1px solid ${theme.palette.primary.main}`
+                          : 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        transform: 'scale(1.02)'
+                      },
+                      '&:active': {
+                        transform: 'scale(0.98)'
+                      }
+                    }}
+                    onClick={() => handleDateClick(day)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      handleLongPress(day);
+                    }}
+                  >
+                    <Typography variant="body2" fontWeight={isCurrent ? 'bold' : 'normal'} fontSize={isMobile ? '0.8rem' : '0.9rem'}>
+                      {day.date()}
+                    </Typography>
+                    
+                    {/* Индикаторы событий */}
+                    {eventCount > 0 && (
+                      <Box sx={{ 
+                        display: 'flex', 
+                        position: 'absolute',
+                        bottom: '2px',
+                        gap: '2px'
+                      }}>
+                        {eventCount <= 3 ? (
+                          // Для небольшого количества событий показываем точки
+                          Array(eventCount).fill(0).map((_, i) => (
+                            <Box
+                              key={i}
+                              sx={{
+                                width: isMobile ? '4px' : '5px',
+                                height: isMobile ? '4px' : '5px',
+                                borderRadius: '50%',
+                                backgroundColor: eventColor,
+                                opacity: 0.8 + (i * 0.1), // увеличение яркости для каждой последующей точки
+                              }}
+                            />
+                          ))
+                        ) : (
+                          // Для большого количества показываем счетчик
+                          <Badge
+                            badgeContent={eventCount}
                             color="primary"
-                            sx={{
-                              bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            sx={{ 
+                              '& .MuiBadge-badge': { 
+                                fontSize: '9px', 
+                                height: '14px', 
+                                minWidth: '14px',
+                                background: eventColor 
+                              } 
+                            }}
+                          />
+                        )}
+                      </Box>
+                    )}
+                  </Paper>
+                </Grid>
+              );
+            })}
+          </Grid>
+
+          {/* Список событий на выбранную дату */}
+          <Fade in={selectedDate !== null}>
+            <Box sx={{ mt: 2 }}>
+              {selectedDate && (
+                <>
+                  <Paper
+                    sx={{
+                      p: isMobile ? 1.5 : 2,
+                      mb: isMobile ? 1.5 : 2,
+                      borderLeft: `4px solid ${theme.palette.primary.main}`,
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <Typography variant="subtitle1" fontWeight="medium">
+                      {selectedDate.format('D MMMM YYYY')}
+                      {isToday(selectedDate.toDate()) && (
+                        <Chip 
+                          label="Сегодня" 
+                          size="small" 
+                          color="primary" 
+                          sx={{ ml: 1, height: '20px' }} 
+                        />
+                      )}
+                      {isTomorrow(selectedDate.toDate()) && (
+                        <Chip 
+                          label="Завтра" 
+                          size="small" 
+                          color="secondary" 
+                          sx={{ ml: 1, height: '20px' }} 
+                        />
+                      )}
+                    </Typography>
+                    
+                    <Divider sx={{ my: 1 }} />
+                    
+                    {selectedDateEvents.length === 0 ? (
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        py: isMobile ? 2 : 3
+                      }}>
+                        <Typography variant="body2" color="text.secondary" mb={1.5}>
+                          На эту дату нет событий
+                        </Typography>
+                        <Button 
+                          variant="contained" 
+                          startIcon={<AddIcon />}
+                          size="medium"
+                          sx={{
+                            borderRadius: '12px',
+                            py: 0.8,
+                            px: 2.5,
+                            textTransform: 'none',
+                            fontWeight: 'medium'
+                          }}
+                          onClick={() => handleLongPress(selectedDate)}
+                        >
+                          Добавить событие
+                        </Button>
+                      </Box>
+                    ) : (
+                      selectedDateEvents.map((event) => {
+                        const eventIcon = event.type === 'birthday' 
+                          ? getEventIcon('birthday') 
+                          : getEventIconByGroup(event.group);
+                        
+                        const eventColor = event.type === 'birthday'
+                          ? CATEGORY_COLORS.birthday
+                          : CATEGORY_COLORS[event.group];
+                            
+                        return (
+                          <Box 
+                            key={event._id}
+                            sx={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              mb: isMobile ? 1 : 1.5,
+                              p: isMobile ? 1 : 1.5,
+                              borderRadius: '10px',
+                              transition: 'all 0.2s',
                               '&:hover': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.15)
+                                bgcolor: alpha(theme.palette.action.hover, 0.15),
+                                transform: 'translateY(-2px)'
                               }
                             }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/edit/${event._id}`);
-                            }}
+                            onClick={() => navigate(`/edit/${event._id}`)}
                           >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      );
-                    })
-                  )}
-                </Paper>
-              </>
-            )}
-          </Box>
-        </Fade>
-      </Box>
+                            <Avatar 
+                              sx={{ 
+                                width: isMobile ? 36 : 42, 
+                                height: isMobile ? 36 : 42, 
+                                bgcolor: alpha(eventColor, 0.15),
+                                color: eventColor,
+                                mr: isMobile ? 1.5 : 2
+                              }}
+                            >
+                              {eventIcon}
+                            </Avatar>
+                            <Box sx={{ flexGrow: 1 }}>
+                              <Typography variant="body1" fontWeight="medium" fontSize={isMobile ? '0.95rem' : '1rem'}>
+                                {event.title}
+                              </Typography>
+                              {event.description && (
+                                <Typography 
+                                  variant="body2" 
+                                  color="text.secondary"
+                                  sx={{ 
+                                    mt: 0.3,
+                                    fontSize: isMobile ? '0.8rem' : '0.875rem'
+                                  }}
+                                >
+                                  {event.description.length > (isMobile ? 40 : 50)
+                                    ? `${event.description.substring(0, isMobile ? 40 : 50)}...` 
+                                    : event.description}
+                                </Typography>
+                              )}
+                            </Box>
+                            <IconButton 
+                              size={isMobile ? "small" : "medium"}
+                              color="primary"
+                              sx={{
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                '&:hover': {
+                                  bgcolor: alpha(theme.palette.primary.main, 0.15)
+                                }
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/edit/${event._id}`);
+                              }}
+                            >
+                              <EditIcon fontSize={isMobile ? "small" : "small"} />
+                            </IconButton>
+                          </Box>
+                        );
+                      })
+                    )}
+                  </Paper>
+                </>
+              )}
+            </Box>
+          </Fade>
+        </motion.div>
+      )}
 
       {/* Режим Фокус */}
       {viewMode === 'focus' && (

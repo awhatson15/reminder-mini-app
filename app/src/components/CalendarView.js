@@ -13,7 +13,8 @@ import {
   Tab,
   Divider,
   Button,
-  Fade
+  Fade,
+  Avatar
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
@@ -21,7 +22,8 @@ import {
   CalendarToday as CalendarIcon,
   ViewList as ListIcon,
   Timeline as TimelineIcon,
-  Add as AddIcon
+  Add as AddIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { UserContext } from '../App';

@@ -14,7 +14,10 @@ import {
   Divider,
   Button,
   Fade,
-  Avatar
+  Avatar,
+  TableHead,
+  TableCell,
+  TableRow
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
@@ -31,7 +34,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
-import { getDaysUntil, getMonthName, isToday, isTomorrow } from '../utils/dateUtils';
+import { getDaysUntil, getMonthName, isToday, isTomorrow, getDayOfWeek, WEEKDAYS_SHORT } from '../utils/dateUtils';
 import Loading from './Loading';
 import TimelineView from './TimelineView';
 import ListView from './ListView';
@@ -335,20 +338,15 @@ const CalendarView = () => {
           </Box>
 
           {/* Дни недели */}
-          <Grid container spacing={0.5} sx={{ mb: 1 }}>
-            {WEEKDAYS.map((day, index) => (
-              <Grid item xs={12/7} key={index}>
-                <Box sx={{ 
-                  textAlign: 'center',
-                  fontWeight: 'medium',
-                  color: theme.palette.text.secondary,
-                  py: 0.5
-                }}>
+          <TableHead>
+            <TableRow>
+              {WEEKDAYS_SHORT.map((day) => (
+                <TableCell key={day} align="center">
                   {day}
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
 
           {/* Календарная сетка */}
           <Grid container spacing={0.5}>

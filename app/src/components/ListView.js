@@ -116,6 +116,11 @@ const ListView = ({ reminders }) => {
       : getEventIconByGroup(reminder.group);
   };
   
+  const formatDate = (date) => {
+    const day = getDayOfWeek(date, 'full');
+    return `${day}, ${date.format('D MMMM YYYY')}`;
+  };
+  
   return (
     <motion.div
       variants={listVariants}

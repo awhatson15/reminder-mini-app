@@ -15,9 +15,10 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { getDaysUntil, formatRelativeTime } from '../utils/dateUtils';
+import { getDaysUntil, formatRelativeTime, getDayOfWeek } from '../utils/dateUtils';
 import { getEventIcon, getEventIconByGroup } from '../utils/eventUtils';
 import { plural } from '../utils/textUtils';
+import dayjs from 'dayjs';
 
 // Анимации
 const timelineVariants = {
@@ -93,6 +94,11 @@ const TimelineView = ({ reminders }) => {
     return `Через ${daysUntil} ${plural(daysUntil, 'день', 'дня', 'дней')}`;
   };
   
+  const formatDate = (date) => {
+    const day = getDayOfWeek(date, 'full');
+    return `${day}, ${date.format('D MMMM YYYY')}`;
+  };
+  
   return (
     <motion.div
       variants={timelineVariants}
@@ -140,6 +146,7 @@ const TimelineView = ({ reminders }) => {
               const eventIcon = getIconForReminder(reminder);
               const timeLeft = formatTimeLeft(reminder);
               const daysUntil = getDaysUntil(reminder.date);
+              const formattedDate = formatDate(dayjs(reminder.date));
               
               // Определяем цвет маркера времени
               const getTimeChipColor = () => {
@@ -185,7 +192,6 @@ const TimelineView = ({ reminders }) => {
                         height: 10,
                         borderRadius: '50%',
                         backgroundColor: eventColor,
-                        zIndex: 2,
                         border: `2px solid ${theme.palette.background.paper}`
                       }}
                     />
@@ -223,7 +229,7 @@ const TimelineView = ({ reminders }) => {
                               {reminder.title}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {formatRelativeTime(reminder.date)}
+                              {formattedDate}
                             </Typography>
                           </Box>
                         </Box>

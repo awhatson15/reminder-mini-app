@@ -403,19 +403,31 @@ export const getMonthName = (date, short = false) => {
   return months[dateObj.getMonth()];
 };
 
+export const WEEKDAYS_FULL = [
+  'Понедельник', 'Вторник', 'Среда', 'Четверг', 
+  'Пятница', 'Суббота', 'Воскресенье'
+];
+
+export const WEEKDAYS_SHORT = [
+  'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'
+];
+
 /**
- * Возвращает локализованное название дня недели
- * @param {Date|string|number} date - дата
- * @param {boolean} short - использовать сокращенное название
+ * Возвращает название дня недели для указанной даты
+ * @param {Date} date - дата для получения дня недели
+ * @param {boolean} short - использовать короткий формат
  * @returns {string} название дня недели
  */
-export const getWeekdayName = (date, short = false) => {
-  const dateObj = new Date(date);
-  const weekdays = short 
-    ? ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'] 
-    : ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+export const getDayOfWeek = (date, short = false) => {
+  if (!date) return '';
   
-  return weekdays[dateObj.getDay()];
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) return '';
+  
+  // Преобразуем индекс дня недели из США (0=воскресенье) в европейский формат (0=понедельник)
+  const dayIndex = (dateObj.getDay() + 6) % 7;
+  
+  return short ? WEEKDAYS_SHORT[dayIndex] : WEEKDAYS_FULL[dayIndex];
 };
 
 /**
@@ -437,7 +449,7 @@ export const formatDatePretty = (date, includeWeekday = false) => {
   let result = `${day} ${month} ${year}`;
   
   if (includeWeekday) {
-    const weekday = getWeekdayName(dateObj);
+    const weekday = getDayOfWeek(dateObj);
     result = `${weekday}, ${result}`;
   }
   
@@ -583,23 +595,4 @@ export const formatRelativeTime = (date) => {
   } else {
     return `${formattedDate} (${dayOfWeek})`;
   }
-};
-
-/**
- * Возвращает название дня недели для указанной даты
- * @param {Date} date - дата для получения дня недели
- * @returns {string} название дня недели
- */
-export const getDayOfWeek = (date) => {
-  if (!date) return '';
-  
-  const dateObj = new Date(date);
-  if (isNaN(dateObj.getTime())) return '';
-  
-  const weekdays = [
-    'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 
-    'Четверг', 'Пятница', 'Суббота'
-  ];
-  
-  return weekdays[dateObj.getDay()];
 }; 

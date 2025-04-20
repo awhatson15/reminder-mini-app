@@ -520,14 +520,25 @@ const EditReminder = () => {
       case 0:
         return (
           <>
-            {type === 'birthday' && (
-              <Box mb={2}>
-                <ContactSearch
-                  onSelect={handleContactSelect}
-                  label="Поиск контакта для дня рождения"
-                />
-              </Box>
-            )}
+            <Box 
+              sx={{ 
+                mb: 3, 
+                p: 2, 
+                bgcolor: 'background.paper',
+                borderRadius: 1,
+                border: '1px dashed',
+                borderColor: type === 'birthday' ? 'primary.main' : 'divider'
+              }}
+            >
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                🎂 Быстрое создание дня рождения
+              </Typography>
+              <ContactSearch
+                onSelect={handleContactSelect}
+                label="Найти контакт в Telegram"
+                helperText="Начните вводить имя контакта для поиска"
+              />
+            </Box>
             
             <TextField
               fullWidth
